@@ -1,33 +1,18 @@
 // lib/export.ts
-import { saveAs } from "file-saver";
 import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
 import { format } from "date-fns";
 
-/**
- * Export data as CSV
- * @param data Array of objects to export
- * @param filename Name of the CSV file
- */
-export function exportCSV(data: any[], filename = "export.csv") {
-  if (!data || data.length === 0) {
-    const blob = new Blob([""], { type: "text/csv" });
-    saveAs(blob, filename);
-    return;
-  }
+// ✅ Only one pdfStyles declaration in the module
+export const pdfStyles = StyleSheet.create({
+  page: { padding: 20, fontSize: 11 },
+  header: { fontSize: 16, marginBottom: 8 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+});
 
-  const keys = Object.keys(data[0]);
-  const rows = data.map((d) =>
-    keys.map((k) => JSON.stringify(d[k] ?? "")).join(",")
-  );
-  const csv = [keys.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  saveAs(blob, filename);
-}
-
-/**
- * Export data as PDF
- * @param param0 Object containing title, data, and options
- */
+// ----------------------
+// PDF Export Function
+// ----------------------
 export async function exportPDF({
   title,
   data,
@@ -39,17 +24,6 @@ export async function exportPDF({
   includeNotes?: boolean;
   localizedTimestamps?: boolean;
 }) {
-  // ✅ Only one pdfStyles declaration
-  const pdfStyles = StyleSheet.create({
-    page: { padding: 20, fontSize: 11 },
-    header: { fontSize: 16, marginBottom: 8 },
-    row: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 6,
-    },
-  });
-
   const Report = () => (
     <Document>
       <Page style={pdfStyles.page}>
@@ -71,4 +45,30 @@ export async function exportPDF({
 
   const blob = await pdf(<Report />).toBlob();
   saveAs(blob, `${title}.pdf`);
+}
+
+// ----------------------
+// CSV Export Function
+// ----------------------
+export function exportCSV({
+  title,
+  data,
+  delimiter = ",",
+}: {
+  title: string;
+  data: any[];
+  delimiter?: string;
+}) {
+  if (!data.length) return;
+
+  const headers = Object.keys(data[0]);
+  const csvContent =
+    [headers.join(delimiter)]
+      .concat(
+        data.map(row => headers.map(h => `"${row[h] ?? ""}"`).join(delimiter))
+      )
+      .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  saveAs(blob, `${title}.csv`);
 }
