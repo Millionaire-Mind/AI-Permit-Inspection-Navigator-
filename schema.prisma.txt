@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  userId     String
+  address    String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  // relations
+  pdfExports PdfExport[]
+}
+
+model ModerationAction {
+  id            String   @id @default(uuid())
+  reportId      String
+  adminUserId   String
+  action        String
+  note          String?
+  overrideContent String?
+  createdAt     DateTime @default(now())
+}
+
+model PdfExport {
+  id        String   @id @default(uuid())
+  reportId  String
+  userId    String
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+model AIAssistLog {
+  id                String   @id @default(uuid())
+  appealId          String
+  moderatorId       String
+  suggestedCategory String
+  confidence        Float
+  rationale         String
+  slaUrgency        String
+  createdAt         DateTime @default(now())
+}
+
+model AIFeedback {
+  id            String   @id @default(uuid())
+  appealId      String
+  suggestionId  String
+  accepted      Boolean
+  comments      String?
+  moderatorId   String
+  category      String?
+  confidence    Float?
+  createdAt     DateTime @default(now())
+}
+
+model AITrainingExample {
+  id             String   @id @default(cuid())
+  appealId       String
+  suggestionId   String
+  moderatorId    String
+  accepted       Boolean
+  comments       String?
+  category       String?
+  confidence     Float?
+  createdAt      DateTime @default(now())
+  reviewedAt     DateTime?
+  usedInJobId    String?
+}
+
+model RetrainJob {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  triggeredBy  String?
+  status       String   @default("queued")
+  priority     Int      @default(0)
+  sampleCount  Int      @default(0)
+  metadata     Json?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  error        String?
+}
+
+model ProductionModel {
+  id           String   @id @default(cuid())
+  modelVersion String   @unique
+  stage        String
+  deployedBy   String?
+  deployedAt   DateTime @default(now())
+  metadata     Json?
+}
+
+model ForecastLog {
+  id         String   @id @default(cuid())
+  triggeredAt DateTime @default(now())
+  results    Json
+}
+  
+model SLATask {
+  id         String   @id @default(cuid())
+  title      String
+  description String
+  priority   String
+  dueAt      DateTime
+  assignedTeam String?
+  status     String
+  type       String
+  createdAt  DateTime @default(now())
+}
+
+model SLASettings {
+  id        String @id @default(cuid())
+  category  String
+  threshold Int
+  teamId    String?
+}
+  
+model Audit {
+  id        String @id @default(cuid())
+  action    String
+  actor     String?
+  detail    Json?
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+
+  reports    Report[]
+  pdfExports PdfExport[]
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  userId    String
+  address   String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id])
+  pdfExports PdfExport[]
+}
+
+model PdfExport {
+  id        String   @id @default(uuid())
+  reportId  String
+  userId    String
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
