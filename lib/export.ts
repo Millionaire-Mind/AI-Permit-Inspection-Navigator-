@@ -2,11 +2,6 @@ import { saveAs } from "file-saver";
 import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
 import { format } from "date-fns";
 
-/**
- * Export data as CSV
- * @param data Array of objects to export
- * @param filename CSV filename
- */
 export function exportCSV(data: any[], filename = "export.csv") {
   if (!data || data.length === 0) {
     const blob = new Blob([""], { type: "text/csv" });
@@ -22,13 +17,6 @@ export function exportCSV(data: any[], filename = "export.csv") {
   saveAs(blob, filename);
 }
 
-/**
- * Export data as PDF
- * @param title PDF title
- * @param data Array of objects
- * @param includeNotes Whether to include notes field
- * @param localizedTimestamps Whether to format date in localized format
- */
 export async function exportPDF({
   title,
   data,
@@ -40,7 +28,7 @@ export async function exportPDF({
   includeNotes?: boolean;
   localizedTimestamps?: boolean;
 }) {
-  // Styles for PDF elements
+  // ✅ Declare pdfStyles only once at the top of the function
   const pdfStyles = StyleSheet.create({
     page: { padding: 20, fontSize: 11 },
     header: { fontSize: 16, marginBottom: 8 },
@@ -48,8 +36,7 @@ export async function exportPDF({
     note: { fontSize: 10, color: "#555" }
   });
 
-  // Create Document directly
-  const doc = (
+  const Report = () => (
     <Document>
       <Page style={pdfStyles.page}>
         <Text style={pdfStyles.header}>{title}</Text>
@@ -70,7 +57,7 @@ export async function exportPDF({
     </Document>
   );
 
-  // Generate PDF blob and trigger download
-  const blob = await pdf(doc).toBlob();
+  const blob = await pdf(<Report />).toBlob();
   saveAs(blob, `${title.replace(/\s+/g, "_")}.pdf`);
 }
+
