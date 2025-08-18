@@ -28,7 +28,7 @@ export async function exportPDF({
   includeNotes?: boolean;
   localizedTimestamps?: boolean;
 }) {
-  // ✅ Declare pdfStyles only once at the top of the function
+  // Only one pdfStyles declaration in the entire file
   const pdfStyles = StyleSheet.create({
     page: { padding: 20, fontSize: 11 },
     header: { fontSize: 16, marginBottom: 8 },
@@ -60,4 +60,3 @@ export async function exportPDF({
   const blob = await pdf(<Report />).toBlob();
   saveAs(blob, `${title.replace(/\s+/g, "_")}.pdf`);
 }
-
