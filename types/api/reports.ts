@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const ReportCreateSchema = z.object({
-  userId: z.string().min(1),
-  address: z.string().min(3)
+  title: z.string(),
+  description: z.string(),
+  userId: z.string(),
 });
-export type ReportCreate = z.infer<typeof ReportCreateSchema>;
+
+export type ReportCreateInput = z.infer<typeof ReportCreateSchema>;
+
