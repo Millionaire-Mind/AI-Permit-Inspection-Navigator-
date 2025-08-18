@@ -1,10 +1,14 @@
-import { z } from "zod";
+// types/api/report.ts
+export interface Report {
+  id: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export const ReportCreateSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  userId: z.string(),
-});
-
-export type ReportCreateInput = z.infer<typeof ReportCreateSchema>;
-
+export const ReportCreateSchema = {
+  // Example Zod schema if using Zod
+  title: { type: "string" },
+  description: { type: "string" },
+};
