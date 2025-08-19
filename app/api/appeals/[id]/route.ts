@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { AppealActionSchema } from "@/types/api/appeal";
+import { prisma } from "@/lib/prisma";
+
+// Removed AppealActionSchema import
 
 export async function GET(_: Request, { params }: { params: { id: string }}) {
   const appeal = await prisma.appeal.findUnique({
@@ -12,11 +13,12 @@ export async function GET(_: Request, { params }: { params: { id: string }}) {
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string }}) {
-  const data = await req.text(); // accept raw to avoid content-type hiccups
-  const parsed = AppealActionSchema.safeParse(JSON.parse(data));
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+  const data = await req.json();
 
-  const { action, assignTo, note } = parsed.data;
+  // Basic validation example (you can improve this)
+  if (!data.action) return NextResponse.json({ error: "Missing action" }, { status: 400 });
+
+  const { action, assignTo, note } = data;
 
   if (action === "approve" || action === "reject") {
     const appeal = await prisma.appeal.update({

@@ -1,27 +1,54 @@
+<<<<<<< HEAD
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ReportPDF } from "@/lib/pdf";
 import { prisma } from "@/lib/prisma";
 import { ExportPDFSchema } from "@/types/api/export";
+=======
+export const dynamic = "force-dynamic";
+>>>>>>> 85e1c072 (Save local changes before rebase)
 
-export async function POST(req: Request) {
-  const data = await req.json();
-  const parsed = ExportPDFSchema.safeParse(data);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import React from "react";
 
-  const report = await prisma.report.findUnique({
-    where: { id: parsed.data.reportId },
-    include: { moderations: true, appeals: { include: { notes: true } } }
-  });
-  if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+export async function GET(req: NextRequest) {
+const { pdf, Document, Page, Text, StyleSheet, View } = await import("@react-pdf/renderer");
 
-  const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null }));
+const report = await prisma.report.findFirst({
+orderBy: { createdAt: "desc" },
+include: {
+project: true,
+},
+});
 
-  return new NextResponse(buf, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="report-${report.id}.pdf"`
-    }
-  });
+const styles = StyleSheet.create({
+page: { padding: 24, fontSize: 12 },
+h1: { fontSize: 18, marginBottom: 8 },
+section: { marginTop: 12 },
+label: { fontWeight: 700 },
+});
+
+const Doc = (
+
+
+Report
+
+ID: {report?.id ?? "N/A"}
+Title: {report?.title ?? "Untitled"}
+Status: {report?.status ?? "unknown"}
+Project: {report?.project?.name ?? "—"}
+Created: {report?.createdAt?.toISOString() ?? "—"}
+
+
+
+);
+
+const buffer = await pdf(Doc).toBuffer();
+return new Response(buffer, {
+headers: {
+"Content-Type": "application/pdf",
+"Content-Disposition": 'inline; filename="report.pdf"',
+},
+});
 }

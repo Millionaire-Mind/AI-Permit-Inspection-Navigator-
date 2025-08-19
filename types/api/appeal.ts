@@ -1,9 +1,8 @@
-import { z } from "zod";
-
-export const AppealCreateSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  userId: z.string(),
+export const AppealActionSchema = z.object({
+  actionType: z.string(),
+  performedBy: z.string(),
+  performedAt: z.string().optional(),
+  // add other fields as needed
 });
 
-export type AppealCreateInput = z.infer<typeof AppealCreateSchema>;
+export type AppealActionInput = z.infer<typeof AppealActionSchema>;

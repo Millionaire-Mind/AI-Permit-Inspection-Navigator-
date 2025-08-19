@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(_: Request, { params }: { params: { id: string }}) {
   const report = await prisma.report.findUnique({

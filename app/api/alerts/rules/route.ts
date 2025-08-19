@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const rules = await prisma.alertRule.findMany({ where: { active: true }});
+  const rules = await prisma.AlertRule.findMany({ where: { active: true }});
   return NextResponse.json({ rules });
 }
 
