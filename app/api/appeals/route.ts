@@ -44,14 +44,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
     }
 
-    // Mock appeal creation
+    // Mock appeal creation - only use fields from schema
     const appeal = {
       id: `appeal-${Date.now()}`,
       userId: parsed.data.userId,
-      reportId: parsed.data.reportId || "report-default",
-      title: parsed.data.title || "New Appeal",
-      description: parsed.data.description || "Appeal description",
-      reason: parsed.data.reason,
+      reportId: "report-default", // Default value since not in schema
+      title: parsed.data.title,
+      description: parsed.data.description,
+      reason: "Appeal reason", // Default value since not in schema
       status: "PENDING",
       priority: "MEDIUM",
       createdAt: new Date().toISOString(),
