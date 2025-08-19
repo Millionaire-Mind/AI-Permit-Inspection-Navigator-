@@ -14,28 +14,42 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  reports    Report[]
-  pdfExports PdfExport[]
+  audits            Audit[] @relation("ActorAudits")
+  aiTrainingExamples AITrainingExample[]
+  actorUser         Audit[] @relation("ActorUser")
+  // other fields...
 }
 
-model Report {
+model Audit {
   id        String   @id @default(uuid())
-  userId    String
-  address   String?
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-
-  user       User        @relation(fields: [userId], references: [id])
-  pdfExports PdfExport[]
+  actorId   String
+  actor     User     @relation("ActorAudits", fields: [actorId], references: [id])
+  // other fields...
 }
 
-model PdfExport {
-  id        String   @id @default(uuid())
-  reportId  String
-  userId    String
-  fileUrl   String
-  createdAt DateTime @default(now())
+model Jurisdiction {
+  id                 String        @id @default(uuid())
+  name               String
+  projects           Project[]
+  permitTypes        PermitType[]
+  permitRequirements PermitRequirement[]
+  // other fields...
+}
 
-  report Report @relation(fields: [reportId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+model PermitType {
+  id             String       @id @default(uuid())
+  jurisdictionId  String
+  jurisdiction    Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  // other fields...
+}
+
+model AlertRule {
+  id          String   @id @default(uuid())
+  scope       String   @default("global")
+  scopeRef    String?
+  kind        String   @default("forecast_spike")
+  threshold   Float    @default(0.2)
+  windowHours Int      @default(24)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }
