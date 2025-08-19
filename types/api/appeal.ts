@@ -3,7 +3,9 @@ import { z } from "zod";
 export const AppealCreateSchema = z.object({
   title: z.string(),
   description: z.string(),
-  userId: z.string(),
+  reason: z.string(),
+  reportId: z.string(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
 });
 
 export const AppealActionSchema = z.object({

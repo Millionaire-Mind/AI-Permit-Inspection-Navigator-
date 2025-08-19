@@ -140,6 +140,7 @@ model PermitRequirement {
   jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
   permitType  PermitType   @relation(fields: [permitTypeId], references: [id])
 
+  @@unique([jurisdictionId, permitTypeId])
   @@map("permit_requirements")
 }
 
