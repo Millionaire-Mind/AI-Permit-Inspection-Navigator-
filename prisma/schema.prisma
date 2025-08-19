@@ -7,26 +7,456 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========================================
+// USER & AUTHENTICATION MODELS
+// ========================================
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  reports    Report[]
-  pdfExports PdfExport[]
+  // Relations
+  reports           Report[]
+  projects          Project[]
+  pdfExports        PdfExport[]
+  appeals           Appeal[]
+  moderationActions ModerationAction[]
+  createdTasks      SLATask[] @relation("CreatedTasks")
+  assignedTasks     SLATask[] @relation("AssignedTasks")
+  aiAssistLogs      AIAssistLog[]
+  aiFeedbacks       AIFeedback[]
+  aiTrainingExamples AITrainingExample[]
+  audits            Audit[] @relation("ActorAudits")
+  actorUser         Audit[] @relation("ActorUser")
+
+  @@map("users")
 }
 
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ========================================
+// JURISDICTION & PROJECT MODELS
+// ========================================
+
+model Jurisdiction {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  state       String
+  country     String
+  timezone    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  projects            Project[]
+  permitTypes        PermitType[]
+  permitRequirements PermitRequirement[]
+  rules              Rule[]
+
+  @@map("jurisdictions")
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  address       String
+  jurisdictionId String
+  userId        String
+  status        ProjectStatus @default(DRAFT)
+  valuation     Float?
+  sqft          Float?
+  scope         String?
+  params        Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  jurisdiction     Jurisdiction     @relation(fields: [jurisdictionId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  reports         Report[]
+  permits         ProjectPermit[]
+  inspections     Inspection[]
+  slaTasks        SLATask[]
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+// ========================================
+// PERMIT & INSPECTION MODELS
+// ========================================
+
+model PermitType {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  category    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  requirements PermitRequirement[]
+  projectPermits ProjectPermit[]
+
+  @@map("permit_types")
+}
+
+model PermitRequirement {
+  id             String   @id @default(uuid())
+  jurisdictionId String
+  permitTypeId   String
+  rule           String
+  criteria       Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  permitType  PermitType   @relation(fields: [permitTypeId], references: [id])
+
+  @@map("permit_requirements")
+}
+
+model ProjectPermit {
+  id           String   @id @default(uuid())
+  projectId    String
+  permitTypeId String
+  status       PermitStatus @default(PENDING)
+  rationale    String?
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  project   Project   @relation(fields: [projectId], references: [id])
+  permitType PermitType @relation(fields: [permitTypeId], references: [id])
+
+  @@unique([projectId, permitTypeId])
+  @@map("project_permits")
+}
+
+enum PermitStatus {
+  PENDING
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Inspection {
+  id          String   @id @default(uuid())
+  projectId   String
+  type        String
+  status      InspectionStatus @default(SCHEDULED)
+  scheduledAt DateTime?
+  completedAt DateTime?
+  inspectorId String?
+  notes       String?
+  findings    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("inspections")
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+// ========================================
+// REPORT & APPEAL MODELS
+// ========================================
+
 model Report {
-  id        String   @id @default(uuid())
-  userId    String
-  address   String?
-  status    String   @default("pending")
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  status      ReportStatus @default(PENDING)
+  category    String?
+  priority    Priority @default(MEDIUM)
+  userId      String
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id])
+  project    Project?   @relation(fields: [projectId], references: [id])
+  appeals    Appeal[]
+  pdfExports PdfExport[]
+  moderations ModerationAction[]
+
+  @@map("reports")
+}
+
+enum ReportStatus {
+  DRAFT
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Appeal {
+  id          String   @id @default(uuid())
+  userId      String
+  reportId    String
+  title       String
+  description String
+  reason      String
+  status      AppealStatus @default(PENDING)
+  priority    Priority @default(MEDIUM)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user                User                @relation(fields: [userId], references: [id])
+  report              Report              @relation(fields: [reportId], references: [id])
+  aiAssistLogs        AIAssistLog[]
+  aiFeedbacks         AIFeedback[]
+  aiTrainingExamples  AITrainingExample[]
+
+  @@map("appeals")
+}
+
+enum AppealStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+// ========================================
+// MODERATION & AI MODELS
+// ========================================
+
+model ModerationAction {
+  id              String   @id @default(uuid())
+  reportId        String
+  appealId        String?
+  adminUserId     String
+  action          String
+  note            String?
+  overrideContent String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  adminUser User @relation(fields: [adminUserId], references: [id])
+  report    Report @relation(fields: [reportId], references: [id])
+
+  @@map("moderation_actions")
+}
+
+model AIAssistLog {
+  id                String   @id @default(uuid())
+  appealId          String
+  moderatorId       String
+  suggestedCategory String
+  confidence        Float
+  rationale         String
+  slaUrgency        String
+  createdAt         DateTime @default(now())
+
+  // Relations
+  appeal     Appeal @relation(fields: [appealId], references: [id])
+  moderator  User   @relation(fields: [moderatorId], references: [id])
+
+  @@map("ai_assist_logs")
+}
+
+model AIFeedback {
+  id            String   @id @default(uuid())
+  appealId      String
+  suggestionId  String
+  accepted      Boolean
+  comments      String?
+  moderatorId   String
+  category      String?
+  confidence    Float?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  appeal     Appeal @relation(fields: [appealId], references: [id])
+  moderator  User   @relation(fields: [moderatorId], references: [id])
+
+  @@map("ai_feedbacks")
+}
+
+model AITrainingExample {
+  id             String   @id @default(uuid())
+  appealId       String
+  suggestionId   String
+  moderatorId    String
+  accepted       Boolean
+  comments       String?
+  category       String?
+  confidence     Float?
+  createdAt      DateTime @default(now())
+  reviewedAt     DateTime?
+  usedInJobId    String?
+
+  // Relations
+  appeal     Appeal @relation(fields: [appealId], references: [id])
+  moderator  User   @relation(fields: [moderatorId], references: [id])
+
+  @@map("ai_training_examples")
+}
+
+// ========================================
+// ML & FORECASTING MODELS
+// ========================================
+
+model RetrainJob {
+  id        String        @id @default(uuid())
+  status    RetrainStatus @default(QUEUED)
+  modelType String
+  metadata  Json?
+  startedAt DateTime?
+  completedAt DateTime?
   createdAt DateTime @default(now())
 
-  user       User        @relation(fields: [userId], references: [id])
-  pdfExports PdfExport[]
+  @@map("retrain_jobs")
+}
+
+enum RetrainStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model ProductionModel {
+  id        String @id @default(uuid())
+  modelType String
+  version   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("production_models")
+}
+
+model Confidence {
+  id        String @id @default(uuid())
+  projectId String
+  scope     String
+  score     Float
+  factors   Json?
+  createdAt DateTime @default(now())
+
+  @@map("confidences")
+}
+
+model ForecastLog {
+  id          String   @id @default(uuid())
+  triggeredAt DateTime @default(now())
+  results     Json
+
+  @@map("forecast_logs")
+}
+
+// ========================================
+// SLA & TASK MODELS
+// ========================================
+
+model SLATask {
+  id           String       @id @default(uuid())
+  title        String
+  description  String
+  priority     Priority
+  dueAt        DateTime
+  assignedTeam String?
+  status       SLATaskStatus @default(PENDING)
+  type         String
+  createdAt    DateTime @default(now())
+  createdBy    String
+  assignedTo   String?
+
+  // Relations
+  createdByUser  User @relation("CreatedTasks", fields: [createdBy], references: [id])
+  assignedUser   User? @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  project        Project @relation(fields: [projectId], references: [id])
+  projectId      String
+
+  @@map("sla_tasks")
+}
+
+enum SLATaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+model SLASettings {
+  id        String @id @default(uuid())
+  category  String
+  threshold Int
+  teamId    String?
+
+  @@map("sla_settings")
+}
+
+// ========================================
+// AUDIT & EXPORT MODELS
+// ========================================
+
+model Audit {
+  id        String @id @default(uuid())
+  action    String
+  actor     String?
+  detail    Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  actorUser User? @relation("ActorUser", fields: [actor], references: [id])
+
+  @@map("audits")
 }
 
 model PdfExport {
@@ -36,6 +466,30 @@ model PdfExport {
   fileUrl   String
   createdAt DateTime @default(now())
 
+  // Relations
   report Report @relation(fields: [reportId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
+
+  @@map("pdf_exports")
+}
+
+// ========================================
+// RULES & COMPLIANCE MODELS
+// ========================================
+
+model Rule {
+  id             String   @id @default(uuid())
+  jurisdictionId String
+  code           String
+  title          String
+  description    String
+  category       String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+
+  @@map("rules")
 }

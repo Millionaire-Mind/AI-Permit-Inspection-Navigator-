@@ -1,65 +1,94 @@
 import { NextResponse } from "next/server";
-import { AppealCreateSchema } from "@/types/api/appeal";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
-// TODO: Implement proper appeals system with database models
-// For now, return mock data to prevent build errors
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  // Mock appeals data
-  const appeals = [
-    {
-      id: "appeal-1",
-      userId: "user-123",
-      reportId: "report-456",
-      title: "Sample Appeal 1",
-      description: "This is a sample appeal for testing purposes",
-      reason: "Sample reason for appeal 1",
-      status: "PENDING",
-      priority: "MEDIUM",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "appeal-2",
-      userId: "user-456",
-      reportId: "report-789",
-      title: "Sample Appeal 2",
-      description: "This is another sample appeal for testing purposes",
-      reason: "Sample reason for appeal 2",
-      status: "UNDER_REVIEW",
-      priority: "HIGH",
-      createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      updatedAt: new Date().toISOString()
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  ];
-  
-  return NextResponse.json({ appeals });
+
+    const appeals = await prisma.appeal.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        report: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ appeals });
+  } catch (error) {
+    console.error("Error fetching appeals:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch appeals" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req: Request) {
   try {
-    const data = await req.json();
-    const parsed = AppealCreateSchema.safeParse(data);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Mock appeal creation - only use fields from schema
-    const appeal = {
-      id: `appeal-${Date.now()}`,
-      userId: parsed.data.userId,
-      reportId: "report-default", // Default value since not in schema
-      title: parsed.data.title,
-      description: parsed.data.description,
-      reason: "Appeal reason", // Default value since not in schema
-      status: "PENDING",
-      priority: "MEDIUM",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    const body = await req.json();
+    
+    // Basic validation
+    if (!body.title || !body.description || !body.reason || !body.reportId) {
+      return NextResponse.json(
+        { error: "Title, description, reason, and reportId are required" },
+        { status: 400 }
+      );
+    }
+
+    const appeal = await prisma.appeal.create({
+      data: {
+        title: body.title,
+        description: body.description,
+        reason: body.reason,
+        priority: body.priority || "MEDIUM",
+        userId: session.user.id,
+        reportId: body.reportId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        report: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+      },
+    });
 
     return NextResponse.json({ appeal }, { status: 201 });
   } catch (error) {
+    console.error("Error creating appeal:", error);
     return NextResponse.json(
       { error: "Failed to create appeal" },
       { status: 500 }
