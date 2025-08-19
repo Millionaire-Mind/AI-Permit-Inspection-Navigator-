@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ReportPDF } from "@/lib/pdf";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ExportPDFSchema } from "@/types/api/export";
 
 export async function POST(req: Request) {

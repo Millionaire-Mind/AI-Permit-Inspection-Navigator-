@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { forecastSeries } from "@/lib/forecast";
 
 export async function GET(req: Request) {
