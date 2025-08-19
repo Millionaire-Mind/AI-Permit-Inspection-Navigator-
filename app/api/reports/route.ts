@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ReportCreateSchema } from "@/types/api/report";
 import { z } from "zod";
 

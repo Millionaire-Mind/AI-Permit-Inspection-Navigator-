@@ -1,4 +1,4 @@
-import prisma from "./prisma";
+import { prisma } from "./prisma";
 import { sendSlack } from "./slack";
 
 export async function runAlertSweep() {
