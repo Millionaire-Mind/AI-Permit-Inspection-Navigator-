@@ -14,33 +14,52 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  audits            Audit[] @relation("ActorAudits")
-  aiTrainingExamples AITrainingExample[]
-  actorUser         Audit[] @relation("ActorUser")
-  // other fields...
+  audits             Audit[]             @relation("ActorAudits")
+  aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
+  actorUser          Audit[]             @relation("ActorUser")
 }
 
 model Audit {
-  id        String   @id @default(uuid())
-  actorId   String
-  actor     User     @relation("ActorAudits", fields: [actorId], references: [id])
-  // other fields...
+  id      String  @id @default(uuid())
+  actorId String
+  actor   User    @relation("ActorAudits", fields: [actorId], references: [id])
+  userId  String?
+  user    User?   @relation("ActorUser", fields: [userId], references: [id])
+}
+
+model AITrainingExample {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("UserAITrainingExamples", fields: [userId], references: [id])
+  // add other fields here
 }
 
 model Jurisdiction {
-  id                 String        @id @default(uuid())
+  id                 String              @id @default(uuid())
   name               String
-  projects           Project[]
+  projects           Project[]           @relation("JurisdictionProjects")
   permitTypes        PermitType[]
-  permitRequirements PermitRequirement[]
-  // other fields...
+  permitRequirements PermitRequirement[] @relation("JurisdictionPermitRequirements")
+}
+
+model Project {
+  id             String       @id @default(uuid())
+  jurisdictionId String
+  jurisdiction   Jurisdiction @relation("JurisdictionProjects", fields: [jurisdictionId], references: [id])
+  // add other fields here
+}
+
+model PermitRequirement {
+  id             String       @id @default(uuid())
+  jurisdictionId String
+  jurisdiction   Jurisdiction @relation("JurisdictionPermitRequirements", fields: [jurisdictionId], references: [id])
+  // add other fields here
 }
 
 model PermitType {
   id             String       @id @default(uuid())
-  jurisdictionId  String
-  jurisdiction    Jurisdiction @relation(fields: [jurisdictionId], references: [id])
-  // other fields...
+  jurisdictionId String
+  jurisdiction   Jurisdiction @relation(fields: [jurisdictionId], references: [id])
 }
 
 model AlertRule {
