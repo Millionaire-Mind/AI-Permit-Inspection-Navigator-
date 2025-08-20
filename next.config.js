@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-reactStrictMode: true,
-env: {
-// keep placeholders here too, but .env should be used
-}
-}; module.exports = nextConfig;
+	reactStrictMode: true,
+	env: {
+		// Prefer .env for secrets; these are placeholders only
+	},
+};
+
+module.exports = nextConfig;
