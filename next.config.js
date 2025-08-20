@@ -1,17 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-<<<<<<< HEAD
-reactStrictMode: true,
-env: {
-// keep placeholders here too, but .env should be used
-}
-}; module.exports = nextConfig;
-=======
-  reactStrictMode: true,
-  env: {
-    // keep placeholders here too, but .env should be used
-  }
+	reactStrictMode: true,
+	env: {
+		// Prefer .env for secrets; these are placeholders only
+	},
 };
 
 module.exports = nextConfig;
->>>>>>> 85e1c072 (Save local changes before rebase)
