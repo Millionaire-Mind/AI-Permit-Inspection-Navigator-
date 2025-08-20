@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
+// Icons optional: fallback to simple Unicode if lucide-react is unavailable
+const CheckIcon = (props: any) => <span {...props}>✔️</span>;
+const XIcon = (props: any) => <span {...props}>✖️</span>;
+const LoaderIcon = (props: any) => <span {...props}>⏳</span>;
+const AlertIcon = (props: any) => <span {...props}>⚠️</span>;
 
 type Props = {
   category?: string;
@@ -42,7 +46,7 @@ export const AISuggestionPanel: React.FC<Props> = ({ category, confidence, ratio
   if (loading) {
     return (
       <div className="p-4 border rounded-lg bg-gray-50 flex items-center space-x-2">
-        <Loader2 className="animate-spin h-5 w-5 text-gray-500" />
+        <LoaderIcon className="animate-spin h-5 w-5 text-gray-500" />
         <span className="text-sm text-gray-600">Generating AI suggestion...</span>
       </div>
     );
@@ -51,7 +55,7 @@ export const AISuggestionPanel: React.FC<Props> = ({ category, confidence, ratio
   if (error) {
     return (
       <div className="p-4 border rounded-lg bg-red-50 flex items-center space-x-2">
-        <AlertTriangle className="h-5 w-5 text-red-500" />
+        <AlertIcon className="h-5 w-5 text-red-500" />
         <span className="text-sm text-red-700">AI suggestion failed: {error}</span>
       </div>
     );
@@ -80,7 +84,7 @@ export const AISuggestionPanel: React.FC<Props> = ({ category, confidence, ratio
 
       {feedback ? (
         <div className="flex items-center space-x-2 text-sm">
-          {feedback === "accepted" ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
+          {feedback === "accepted" ? <CheckIcon className="h-5 w-5 text-green-500" /> : <XIcon className="h-5 w-5 text-red-500" />}
           <span className="font-medium">{feedback === "accepted" ? "Suggestion accepted" : "Suggestion rejected"}</span>
         </div>
       ) : (

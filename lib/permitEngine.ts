@@ -19,7 +19,7 @@ export async function checkProjectPermits(projectId: string) {
     include: { permitType: true },
   });
 
-  const params = (project.params ?? {}) as Record<string, any>;
+  const params = (project.params ?? {}) as any as Record<string, any>;
   const decisions: Array<{
     permitTypeId: string;
     status: 'required' | 'maybe' | 'not_required';
@@ -27,7 +27,7 @@ export async function checkProjectPermits(projectId: string) {
   }> = [];
 
   for (const req of requirements) {
-    const status = evaluateCriteria(req.criteria ?? {}, params);
+    const status = evaluateCriteria((req.criteria as any as Record<string, any>) ?? {}, params);
     const rationale = `Matched rule: ${req.rule.slice(0, 140)}${req.rule.length > 140 ? '…' : ''}`;
     decisions.push({ permitTypeId: req.permitTypeId, status, rationale });
   }

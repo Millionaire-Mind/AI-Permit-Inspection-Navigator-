@@ -12,8 +12,8 @@ export async function GET(_: Request, { params }: { params: { id: string }}) {
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string }}) {
-  const data = await req.text(); // accept raw to avoid content-type hiccups
-  const parsed = AppealActionSchema.safeParse(JSON.parse(data));
+  const json = await req.json().catch(() => ({}));
+  const parsed = AppealActionSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
   const { action, assignTo, note } = parsed.data;

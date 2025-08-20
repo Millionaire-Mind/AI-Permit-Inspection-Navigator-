@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { triggerProactiveScheduling } from "./../ml/retrainQueueManager";
+// import { triggerProactiveScheduling } from "./../ml/retrainQueueManager";
 import { scheduleRetrainIfNeeded } from "../ml/retrainScheduler";
 import { logger } from "../logger";
 import { sendSlackAlert } from "../alerts/sendSlackAlert";
@@ -22,7 +22,7 @@ export async function forecastRunnerJob() {
       const totalPredicted = f.predicted;
       const slaThreshold = 50;
       if (totalPredicted > slaThreshold) {
-        await db.slaTask.create({
+        await db.sLATask.create({
           data: {
             title: `Add moderators for forecast ${f.date}`,
             description: `Predicted ${totalPredicted} appeals.`,

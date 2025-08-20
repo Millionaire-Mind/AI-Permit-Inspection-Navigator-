@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { CreateProjectSchema, ProjectListQuerySchema } from '@/types/api/projects';
+import { Prisma } from '@prisma/client';
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
 
-  const project = await prisma.project.create({ data });
+  const project = await prisma.project.create({ data: { ...data, params: (data.params as Prisma.InputJsonValue) } });
   return NextResponse.json({ project }, { status: 201 });
 }
 

@@ -73,12 +73,12 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
       data: {
         status: "succeeded",
         finishedAt: new Date(),
-        metadata: { ...job.metadata, trainingResult: result }
+        metadata: { trainingResult: result } as any
       }
     });
 
     const ids = selected.map((s) => s.id);
-    await db.aiTrainingExample.updateMany({
+    await db.aITrainingExample.updateMany({
       where: { id: { in: ids } },
       data: { usedInJobId: job.id, reviewedAt: new Date() }
     });

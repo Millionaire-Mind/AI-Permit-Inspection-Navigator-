@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const sla = await db.sLASettings.findFirst({ where: { category } });
       if (!sla) continue;
       if (total > sla.threshold) {
-        await db.alert.create({
+        await db.audit.create({
           data: {
             action: "SLA_PROACTIVE_SCHEDULING",
             actor: "system",

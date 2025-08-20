@@ -16,6 +16,8 @@ model User {
 
   reports    Report[]
   pdfExports PdfExport[]
+  appeals    Appeal[]
+  projects   Project[]
 }
 
 model Report {
@@ -25,8 +27,10 @@ model Report {
   status    String   @default("pending")
   createdAt DateTime @default(now())
 
-  user       User        @relation(fields: [userId], references: [id])
-  pdfExports PdfExport[]
+  user         User               @relation(fields: [userId], references: [id])
+  pdfExports   PdfExport[]
+  moderations  ModerationAction[]
+  appeals      Appeal[]
 }
 
 model PdfExport {
@@ -38,4 +42,257 @@ model PdfExport {
 
   report Report @relation(fields: [reportId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
+}
+
+model ModerationAction {
+  id              String   @id @default(uuid())
+  reportId        String
+  adminUserId     String
+  action          String
+  note            String?
+  overrideContent String?
+  createdAt       DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id])
+}
+
+model Appeal {
+  id           String   @id @default(uuid())
+  userId       String
+  reportId     String
+  reason       String?
+  status       String   @default("pending")
+  reviewedAt   DateTime?
+  assignedToId String?
+  createdAt    DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  report Report @relation(fields: [reportId], references: [id])
+  notes  AppealNote[]
+}
+
+model AppealNote {
+  id        String   @id @default(uuid())
+  appealId  String
+  content   String
+  tag       String?
+  createdAt DateTime @default(now())
+
+  appeal Appeal @relation(fields: [appealId], references: [id])
+}
+
+model Jurisdiction {
+  id                 String              @id @default(uuid())
+  name               String
+  state              String
+  createdAt          DateTime            @default(now())
+
+  permitTypes        PermitType[]
+  permitRequirements PermitRequirement[]
+  projects           Project[]
+  ruleSources        RuleSource[]
+}
+
+model PermitType {
+  id             String         @id @default(uuid())
+  jurisdictionId String
+  name           String
+  category       String?
+
+  jurisdiction   Jurisdiction   @relation(fields: [jurisdictionId], references: [id])
+  projectPermits ProjectPermit[]
+  requirements   PermitRequirement[]
+}
+
+model PermitRequirement {
+  id             String       @id @default(uuid())
+  jurisdictionId String
+  permitTypeId   String
+  rule           String
+  criteria       Json?
+
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  permitType   PermitType   @relation(fields: [permitTypeId], references: [id])
+}
+
+model Project {
+  id             String        @id @default(uuid())
+  userId         String
+  jurisdictionId String
+  type           String
+  subType        String?
+  description    String?
+  address        String?
+  params         Json?
+  createdAt      DateTime      @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  permits      ProjectPermit[]
+  inspections  Inspection[]
+  confidences  Confidence[]
+}
+
+model ProjectPermit {
+  id           String   @id @default(uuid())
+  projectId    String
+  permitTypeId String
+  status       String
+  rationale    String?
+  createdAt    DateTime @default(now())
+
+  project    Project    @relation(fields: [projectId], references: [id])
+  permitType PermitType @relation(fields: [permitTypeId], references: [id])
+
+  @@unique([projectId, permitTypeId], name: "projectId_permitTypeId")
+}
+
+model Confidence {
+  id        String   @id @default(uuid())
+  projectId String
+  scope     String
+  score     Float
+  factors   Json?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Inspection {
+  id            String   @id
+  projectId     String
+  type          String
+  requiredAfter String?
+  orderIndex    Int
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model RuleSource {
+  id             String   @id @default(uuid())
+  jurisdictionId String
+  sourceType     String
+  url            String?
+  title          String?
+  meta           Json?
+
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+}
+
+model AlertRule {
+  id          String   @id @default(uuid())
+  scope       String   @default("global")
+  scopeRef    String?
+  kind        String   @default("forecast_spike")
+  threshold   Float    @default(0.0)
+  windowHours Int      @default(24)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  events AlertEvent[]
+}
+
+model AlertEvent {
+  id        String   @id @default(uuid())
+  ruleId    String?
+  message   String
+  level     String
+  createdAt DateTime @default(now())
+
+  rule AlertRule? @relation(fields: [ruleId], references: [id])
+}
+
+model AIAssistLog {
+  id                String   @id @default(uuid())
+  appealId          String
+  moderatorId       String
+  suggestedCategory String
+  confidence        Float
+  rationale         String
+  slaUrgency        String
+  createdAt         DateTime @default(now())
+}
+
+model AIFeedback {
+  id           String   @id @default(uuid())
+  appealId     String
+  suggestionId String
+  accepted     Boolean
+  comments     String?
+  moderatorId  String
+  category     String?
+  confidence   Float?
+  createdAt    DateTime @default(now())
+}
+
+model AITrainingExample {
+  id           String   @id @default(cuid())
+  appealId     String
+  suggestionId String
+  moderatorId  String
+  accepted     Boolean
+  comments     String?
+  category     String?
+  confidence   Float?
+  createdAt    DateTime @default(now())
+  reviewedAt   DateTime?
+  usedInJobId  String?
+}
+
+model RetrainJob {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  triggeredBy String?
+  status      String   @default("queued")
+  priority    Int      @default(0)
+  sampleCount Int      @default(0)
+  metadata    Json?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  error       String?
+}
+
+model ProductionModel {
+  id           String   @id @default(cuid())
+  modelVersion String   @unique
+  stage        String
+  deployedBy   String?
+  deployedAt   DateTime @default(now())
+  metadata     Json?
+}
+
+model ForecastLog {
+  id          String   @id @default(cuid())
+  triggeredAt DateTime @default(now())
+  results     Json
+}
+
+model SLATask {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  priority     String
+  dueAt        DateTime
+  assignedTeam String?
+  status       String
+  type         String
+  createdAt    DateTime @default(now())
+}
+
+model SLASettings {
+  id        String @id
+  category  String
+  threshold Int
+  teamId    String?
+  graceMin  Int    @default(15)
+}
+
+model Audit {
+  id        String @id @default(cuid())
+  action    String
+  actor     String?
+  detail    Json?
+  createdAt DateTime @default(now())
 }

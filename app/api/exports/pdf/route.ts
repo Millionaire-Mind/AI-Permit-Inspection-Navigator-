@@ -15,9 +15,9 @@ export async function POST(req: Request) {
   });
   if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
-  const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null }));
+  const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null } as any));
 
-  return new NextResponse(buf, {
+  return new NextResponse(buf as any, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

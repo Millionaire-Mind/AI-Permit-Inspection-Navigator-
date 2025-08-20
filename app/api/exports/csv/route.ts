@@ -1,6 +1,9 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Parser } from "json2csv";
+// json2csv v6 lacks types; import via require to avoid TS error
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Parser } = require("json2csv");
 
 export async function GET() {
   const reports = await prisma.report.findMany();

@@ -1,6 +1,14 @@
-import nodemailer from "nodemailer";
+let nodemailer: any;
+try {
+  // Defer import to runtime, avoid build-time type dependency
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  nodemailer = require("nodemailer");
+} catch (_) {
+  nodemailer = null;
+}
 
 export async function sendErrorAlert({ subject, message }: { subject: string; message: string }) {
+  if (!nodemailer) return;
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_SMTP_HOST,
     port: Number(process.env.EMAIL_SMTP_PORT || 587),

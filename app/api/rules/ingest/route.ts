@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const { jurisdictionId, sourceType, url, title, meta } = parsed.data;
 
   const source = await prisma.ruleSource.create({
-    data: { jurisdictionId, sourceType, url: url ?? null, title: title ?? null, meta: meta ?? {} },
+    data: { jurisdictionId, sourceType, url: url ?? null, title: title ?? null, meta: (meta ?? {}) as any },
   });
 
   // Ingest placeholder:

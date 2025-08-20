@@ -30,3 +30,19 @@ This repository contains the Phase 1–8 implementation of the AI Permit & Inspe
    npm install
    # or
    yarn install
+   ```
+3. Generate Prisma client and run migrations:
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev
+   ```
+4. Seed (optional):
+   ```bash
+   npm run prisma:seed
+   ```
+
+### Environment variables
+- DATABASE_URL: PostgreSQL connection string
+- INFERENCE_SERVICE_URL: External inference API base URL
+- INFERENCE_API_KEY: Token for inference service
+- TRAINING_SERVICE_URL: External training API base URL

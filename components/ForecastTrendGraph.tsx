@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Card, SectionTitle } from "../UiPrimitives";
+import { Card, SectionTitle } from "./UiPrimitives";
 
 const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
 const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false });
@@ -13,31 +13,31 @@ const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: fa
 const CartesianGrid = dynamic(() => import("recharts").then(m => m.CartesianGrid), { ssr: false });
 
 export default function ForecastTrendGraph() {
-const [data, setData] = useState<any[]>([]);
+	const [data, setData] = useState<any[]>([]);
 
-useEffect(() => {
-(async () => {
-const res = await fetch("/api/forecast/trend?horizon=30");
-if (!res.ok) return;
-const json = await res.json();
-setData(json?.series ?? []);
-})();
-}, []);
+	useEffect(() => {
+		(async () => {
+			const res = await fetch("/api/forecast/trend?horizon=30");
+			if (!res.ok) return;
+			const json = await res.json();
+			setData(json?.series ?? []);
+		})();
+	}, []);
 
-return (
-
-Forecast Trend
-<div style={{ width: "100%", height: 260 }}>
-
-
-
-
-
-
-
-
-
-
-
-);
+	return (
+		<Card>
+			<SectionTitle>Forecast Trend</SectionTitle>
+			<div style={{ width: "100%", height: 260 }}>
+				<ResponsiveContainer>
+					<LineChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+						<CartesianGrid strokeDasharray="3 3" />
+						<XAxis dataKey="date" />
+						<YAxis />
+						<Tooltip />
+						<Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} />
+					</LineChart>
+				</ResponsiveContainer>
+			</div>
+		</Card>
+	);
 }
