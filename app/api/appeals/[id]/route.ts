@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 // Removed AppealActionSchema import
 
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+// Removed AppealActionSchema import
+
 export async function GET(_: Request, { params }: { params: { id: string }}) {
   const appeal = await prisma.appeal.findUnique({
     where: { id: params.id },

@@ -1,27 +1,18 @@
-// lib/alerts.ts
-import { prisma } from "@/lib/prisma";
+import prisma from "./prisma";
+import { sendSlack } from "./slack";
 
-export async function getActiveAlertRules() {
-  return await prisma.alertRule.findMany({ where: { active: true } });
-}
-
-export async function createAlert(data: {
-  scope: string;
-  scopeRef?: string | null;
-  kind: string;
-  threshold: number;
-  windowHours: number;
-}) {
-  return await prisma.alertRule.create({ data });
-}
-
-// Example function to trigger an alert (expand as needed)
-export async function triggerAlert(alertData: {
-  ruleId: string;
-  message: string;
-  severity?: "info" | "warning" | "critical";
-}) {
-  // Implement alert sending logic here, e.g., send email, Slack, etc.
-  console.log(`Alert triggered for rule ${alertData.ruleId}: ${alertData.message}`);
-  // You can also save alerts to DB if you have an Alert model
+export async function runAlertSweep() {
+  const rules = await prisma.alertRule.findMany({ where: { active: true } });
+  let created = 0;
+  for (const r of rules) {
+    // demo: generate a fake spike event 1/4 times
+    if (Math.random() < 0.25) {
+      await prisma.alertEvent.create({ data: {
+        ruleId: r.id, message: `[${r.kind}] threshold ${r.threshold} exceeded for ${r.scope}`, level: "warn"
+      }});
+      created++;
+      await sendSlack(`ALERT: ${r.kind} on ${r.scope} exceeded threshold`);
+    }
+  }
+  return { created };
 }
