@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { AppealActionSchema } from "@/types/api/appeal";
 
-export async function GET(_: Request, { params }: { params: { id: string }}) {
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   const appeal = await prisma.appeal.findUnique({
     where: { id: params.id },
-    include: { notes: true }
+    include: { notes: true },
   });
   if (!appeal) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ appeal });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string }}) {
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const json = await req.json().catch(() => ({}));
   const parsed = AppealActionSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string }})
   if (action === "approve" || action === "reject") {
     const appeal = await prisma.appeal.update({
       where: { id: params.id },
-      data: { status: action, reviewedAt: new Date() }
+      data: { status: action, reviewedAt: new Date() },
     });
     return NextResponse.json({ appeal });
   }
@@ -29,14 +29,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string }})
   if (action === "assign" && assignTo) {
     const appeal = await prisma.appeal.update({
       where: { id: params.id },
-      data: { assignedToId: assignTo }
+      data: { assignedToId: assignTo },
     });
     return NextResponse.json({ appeal });
   }
 
   if (action === "note" && note) {
     const created = await prisma.appealNote.create({
-      data: { appealId: params.id, content: note, tag: "moderator" }
+      data: { appealId: params.id, content: note, tag: "moderator" },
     });
     return NextResponse.json({ note: created });
   }
@@ -44,7 +44,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string }})
   if (action === "reviewed") {
     const appeal = await prisma.appeal.update({
       where: { id: params.id },
-      data: { reviewedAt: new Date() }
+      data: { reviewedAt: new Date() },
     });
     return NextResponse.json({ appeal });
   }
