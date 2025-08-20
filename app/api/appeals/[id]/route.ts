@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { AppealActionSchema } from "@/types/api/appeal";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {

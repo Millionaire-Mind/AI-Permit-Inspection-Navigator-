@@ -13,4 +13,4 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
-export default prisma;
+// Prefer named import usage: import { prisma } from '@/lib/prisma'
