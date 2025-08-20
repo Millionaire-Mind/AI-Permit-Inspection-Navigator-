@@ -2,15 +2,16 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  const { prisma } = await import("@/lib/prisma");
   const rules = await prisma.alertRule.findMany({ where: { active: true }});
   return NextResponse.json({ rules });
 }
 
 export async function POST(req: Request) {
   const body = await req.json();
+  const { prisma } = await import("@/lib/prisma");
   const rule = await prisma.alertRule.create({
     data: {
       scope: body.scope ?? "global",

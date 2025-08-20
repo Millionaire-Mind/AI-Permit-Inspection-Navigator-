@@ -1,7 +1,12 @@
-import prisma from "./prisma";
+// Lazy import Prisma to avoid client initialization during build-time imports
+async function getPrisma() {
+  const mod = await import("./prisma");
+  return mod.default;
+}
 import { sendSlack } from "./slack";
 
 export async function runAlertSweep() {
+  const prisma = await getPrisma();
   const rules = await prisma.alertRule.findMany({ where: { active: true } });
   let created = 0;
   for (const r of rules) {
