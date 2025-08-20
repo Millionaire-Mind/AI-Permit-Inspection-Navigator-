@@ -22,8 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(201).json({ rule });
     }
   } catch (err: any) {
-    // Defensive: never throw during build-time scans
-    return res.status(200).json({ rules: [], error: true });
+    console.error("API /api/alerts/rules error:", err);
+    return res.status(500).json({ error: true });
   }
   res.status(405).end();
 }
