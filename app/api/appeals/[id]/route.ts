@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 import { AppealActionSchema } from "@/types/api/appeal";
 
 export async function GET(_: Request, { params }: { params: { id: string }}) {
-  const appeal = await prisma.report.findUnique({
+  const appeal = await prisma.appeal.findUnique({
     where: { id: params.id },
-    include: { appeals: { include: { notes: true } } }
+    include: { notes: true }
   });
   if (!appeal) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ appeal });
