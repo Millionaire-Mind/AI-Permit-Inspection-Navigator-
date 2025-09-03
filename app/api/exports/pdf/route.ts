@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { ReportPDF } from "@/lib/pdf";
 import { prisma } from "@/lib/prisma";
 import { ExportPDFSchema } from "@/types/api/export";
+import { canUseFeature } from "@/lib/featureGate";
 
 export async function POST(req: Request) {
   const data = await req.json();
@@ -10,6 +11,8 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
   const client: any = prisma as any;
+  const allowed = await canUseFeature({ feature: "pdf_export", userEmail: undefined });
+  if (!allowed) return NextResponse.json({ error: "feature_not_enabled" }, { status: 402 });
   const report = client.report?.findUnique ? await client.report.findUnique({
     where: { id: parsed.data.reportId },
     include: { moderations: true, appeals: { include: { notes: true } } }
