@@ -1,6 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { sendSlackAlert as sendSlack } from "./alerts/sendSlackAlert";
-import { sendErrorAlert } from "./alerts/sendErrorAlert";
+// Defer nodemailer usage to runtime to avoid bundling Node deps in build
+let sendErrorEmail: ((args: { subject: string; message: string }) => Promise<void>) | null = null;
+async function loadEmailSender() {
+  if (sendErrorEmail) return sendErrorEmail;
+  try {
+    const mod = await import("./alerts/sendErrorAlert");
+    sendErrorEmail = mod.sendErrorAlert;
+  } catch {
+    sendErrorEmail = null;
+  }
+  return sendErrorEmail;
+}
 
 export async function runAlertSweep() {
   const rules = await prisma.alertRule.findMany({ where: { active: true } });
@@ -16,7 +27,7 @@ export async function runAlertSweep() {
       }
       created++;
       await sendSlack(`ALERT: ${r.kind} on ${r.scope} exceeded threshold`);
-      try { await sendErrorAlert({ subject: `Alert: ${r.kind}`, message: `Scope: ${r.scope} threshold ${r.threshold} exceeded.` }); } catch {}
+      try { const send = await loadEmailSender(); if (send) await send({ subject: `Alert: ${r.kind}`, message: `Scope: ${r.scope} threshold ${r.threshold} exceeded.` }); } catch {}
     }
   }
   return { created };

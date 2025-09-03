@@ -40,6 +40,14 @@ export function ReportPDF(props: { report: any; timezone: string; noteTagFilter:
           <Text style={styles.row}>Address: {report?.address ?? "—"}</Text>
           <Text style={styles.row}>Created: {report?.createdAt ? String(report.createdAt) : "—"}</Text>
         </View>
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ fontSize: 14, marginBottom: 6 }}>Moderation Summary</Text>
+          <Text style={styles.row}>Moderations: {Array.isArray(report?.moderations) ? report.moderations.length : 0}</Text>
+        </View>
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ fontSize: 14, marginBottom: 6 }}>Appeals</Text>
+          <Text style={styles.row}>Appeals Count: {Array.isArray(report?.appeals) ? report.appeals.length : 0}</Text>
+        </View>
       </Page>
     </Document>
   );

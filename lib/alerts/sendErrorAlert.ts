@@ -1,4 +1,5 @@
-import nodemailer from "nodemailer";
+// Defer nodemailer to runtime require to avoid bundling Node deps in Next build
+const nodemailer: any = (eval('require') as any)("nodemailer");
 
 export async function sendErrorAlert({ subject, message }: { subject: string; message: string }) {
   const transporter = nodemailer.createTransport({

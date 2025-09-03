@@ -18,6 +18,17 @@ export async function POST(req: Request) {
 
   const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null } as any));
 
+  // Persist PdfExport record if model exists
+  try {
+    const saved = client.pdfExport?.create ? await client.pdfExport.create({
+      data: {
+        reportId: report.id,
+        userId: report.userId ?? "system",
+        fileUrl: `/api/exports/pdf?reportId=${report.id}`
+      }
+    }) : null;
+  } catch {}
+
   return new NextResponse(buf as any, {
     status: 200,
     headers: {
