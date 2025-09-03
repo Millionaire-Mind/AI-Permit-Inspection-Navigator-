@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create default user
+  // Create default admin user
   const hashedPassword = await bcrypt.hash('password123', 10);
   
   const user = await prisma.user.upsert({
@@ -14,10 +14,16 @@ async function main() {
       email: 'superadmin@example.com',
       password: hashedPassword,
       name: 'Super Admin',
+      role: 'ADMIN',
+      subscriptionStatus: 'active'
     },
   });
 
   console.log('✅ Seeded user:', user.email);
+
+  // Optional: create a sample jurisdiction and project to make the app feel populated
+  const j = await prisma.jurisdiction.create({ data: { name: 'Sample City' } });
+  await prisma.project.create({ data: { jurisdictionId: j.id } });
 }
 
 main()

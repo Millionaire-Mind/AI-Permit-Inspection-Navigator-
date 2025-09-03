@@ -13,8 +13,16 @@ model User {
   password  String
   name      String?
   createdAt DateTime @default(now())
+  role      Role     @default(USER)
+  customerId         String?
+  subscriptionStatus String? @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model Audit {
