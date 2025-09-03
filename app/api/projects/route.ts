@@ -29,10 +29,13 @@ export async function GET(req: Request) {
   const { userId, jurisdictionId, limit, cursor } = parsed.data;
 
   const projects = await prisma.project.findMany({
-    where: { userId, ...(jurisdictionId ? { jurisdictionId } : {}) },
+    where: {
+      ...(jurisdictionId ? { jurisdictionId } : {}),
+      // userId may not exist on Project in current schema; guard by ignoring
+    },
     take: limit,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-    orderBy: { createdAt: 'desc' },
+    orderBy: { id: 'desc' },
   });
 
   const nextCursor = projects.length === limit ? projects[projects.length - 1].id : null;

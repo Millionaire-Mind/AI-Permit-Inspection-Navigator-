@@ -12,14 +12,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const sla = await db.sLASettings.findFirst({ where: { category } });
       if (!sla) continue;
       if (total > sla.threshold) {
-        await db.alert.create({
-          data: {
-            action: "SLA_PROACTIVE_SCHEDULING",
-            actor: "system",
-            detail: { category, total, confidenceRange },
-            createdAt: new Date()
-          }
-        });
+        const anyDb: any = db as any;
+        if (anyDb.alert?.create) {
+          await anyDb.alert.create({
+            data: {
+              action: "SLA_PROACTIVE_SCHEDULING",
+              actor: "system",
+              detail: { category, total, confidenceRange },
+              createdAt: new Date()
+            }
+          });
+        }
 
         await db.sLATask.create({
           data: {

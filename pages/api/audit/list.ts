@@ -3,7 +3,7 @@ import db from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
 export default requireAdmin(async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const anyDb: any = db as any;
-  const jobs = anyDb.retrainJob?.findMany ? await anyDb.retrainJob.findMany({ orderBy: { createdAt: "desc" }, take: 20 }) : [];
-  res.status(200).json(jobs);
+  const items = await db.audit.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
+  res.status(200).json(items);
 });
+

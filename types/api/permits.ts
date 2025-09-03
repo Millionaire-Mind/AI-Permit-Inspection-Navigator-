@@ -19,7 +19,7 @@ export const CheckPermitsResponseSchema = z.object({
   decisions: z.array(PermitDecisionSchema),
   confidence: z.object({
     score: z.number().min(0).max(1),
-    factors: z.record(z.any()).optional(),
+    factors: z.record(z.string(), z.any()).optional(),
   }),
 });
 export type CheckPermitsResponse = z.infer<typeof CheckPermitsResponseSchema>;
