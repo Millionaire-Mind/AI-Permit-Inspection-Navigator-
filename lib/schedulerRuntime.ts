@@ -3,28 +3,33 @@ export async function setupScheduler() {
   if (g.__schedulerInitialized) return;
   g.__schedulerInitialized = true;
 
-  const cron = (eval('require') as any)("node-cron");
-  const { forecastRunnerJob } = await import("./jobs/forecastRunner");
-  const { scheduleRetrainIfNeeded } = await import("./ml/retrainScheduler");
+  try {
+    const cron = (eval('require') as any)("node-cron");
+    const { forecastRunnerJob } = await import("@/lib/jobs/forecastRunner");
+    const { scheduleRetrainIfNeeded } = await import("@/lib/ml/retrainScheduler");
 
-  // Run forecast every 6 hours
-  cron.schedule("0 */6 * * *", async () => {
-    try {
-      console.log("[scheduler] Running forecastRunnerJob");
-      await forecastRunnerJob();
-    } catch (e) {
-      console.error("Forecast runner error", e);
-    }
-  });
+    // Run forecast every 6 hours
+    cron.schedule("0 */6 * * *", async () => {
+      try {
+        console.log("[scheduler] Running forecastRunnerJob");
+        await forecastRunnerJob();
+      } catch (e) {
+        console.error("Forecast runner error", e);
+      }
+    });
 
-  // Daily retrain check at 03:00
-  cron.schedule("0 3 * * *", async () => {
-    try {
-      console.log("[scheduler] Running retrain schedule check");
-      await scheduleRetrainIfNeeded({ minSamples: 200 });
-    } catch (e) {
-      console.error("Retrain schedule error", e);
-    }
-  });
+    // Daily retrain check at 03:00
+    cron.schedule("0 3 * * *", async () => {
+      try {
+        console.log("[scheduler] Running retrain schedule check");
+        await scheduleRetrainIfNeeded({ minSamples: 200 });
+      } catch (e) {
+        console.error("Retrain schedule error", e);
+      }
+    });
+  } catch (e: any) {
+    console.warn("[scheduler] Skipping scheduler init:", e?.message ?? e);
+    return;
+  }
 }
 
