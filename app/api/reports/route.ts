@@ -10,12 +10,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const parse = ReportCreateSchema.safeParse(body);
-  if (!parse.success) return NextResponse.json({ error: parse.error.format() }, { status: 400 });
+  const parsed = ReportCreateSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
-  const { userId, address } = parse.data;
-  const report = await prisma.report.create({
-    data: { userId, address, status: "pending" }
-  });
+  const { userId, address } = parsed.data;
+  const report = await prisma.report.create({ data: { userId, address, status: "pending" } });
   return NextResponse.json({ report }, { status: 201 });
 }

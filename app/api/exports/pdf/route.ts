@@ -9,13 +9,26 @@ export async function POST(req: Request) {
   const parsed = ExportPDFSchema.safeParse(data);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
-  const report = await prisma.report.findUnique({
-    where: { id: parsed.data.reportId },
-    include: { moderations: true, appeals: { include: { notes: true } } }
-  });
+  const report = await prisma.report.findUnique({ where: { id: parsed.data.reportId } });
   if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
-  const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null } as any));
+  const buf = await renderToBuffer(
+    ReportPDF({
+      title: `Report ${report.id}`,
+      status: report.status,
+      projectName: report.address ?? "—",
+      createdAt: report.createdAt.toISOString(),
+    })
+  );
+
+  // Persist PdfExport record (store a placeholder URL since we're streaming)
+  await prisma.pdfExport.create({
+    data: {
+      reportId: report.id,
+      userId: report.userId,
+      fileUrl: `/api/exports/pdf?reportId=${report.id}`,
+    },
+  });
 
   return new NextResponse(buf as any, {
     status: 200,

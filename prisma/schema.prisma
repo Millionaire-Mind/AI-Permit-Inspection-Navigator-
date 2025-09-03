@@ -17,6 +17,9 @@ model User {
   audits             Audit[]             @relation("ActorAudits")
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
   actorUser          Audit[]             @relation("ActorUser")
+  // Phase 1 relations
+  reports            Report[]
+  pdfExports         PdfExport[]
 }
 
 model Audit {
@@ -32,6 +35,89 @@ model AITrainingExample {
   userId String
   user   User   @relation("UserAITrainingExamples", fields: [userId], references: [id])
   // add other fields here
+}
+
+// Phase 1 core entities
+model Report {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  address   String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  pdfExports PdfExport[]
+}
+
+model PdfExport {
+  id        String   @id @default(uuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+// Phase 2 moderation assistance
+model AIAssistLog {
+  id                String   @id @default(uuid())
+  appealId          String
+  moderatorId       String
+  suggestedCategory String
+  confidence        Float
+  rationale         String
+  slaUrgency        String   @default("medium")
+  createdAt         DateTime @default(now())
+}
+
+model ModerationAction {
+  id          String   @id @default(uuid())
+  reportId    String
+  adminUserId String
+  action      String
+  note        String?
+  createdAt   DateTime @default(now())
+}
+
+// Phase 3 feedback and retraining
+model AIFeedback {
+  id           String   @id @default(uuid())
+  appealId     String
+  suggestionId String?
+  accepted     Boolean
+  comments     String?
+  moderatorId  String
+  category     String?
+  confidence   Float?
+  createdAt    DateTime @default(now())
+}
+
+model AITrainingExample {
+  id           String   @id @default(uuid())
+  appealId     String
+  suggestionId String?
+  moderatorId  String
+  accepted     Boolean
+  comments     String?
+  category     String?
+  confidence   Float?
+  createdAt    DateTime @default(now())
+  reviewedAt   DateTime?
+  usedInJobId  String?
+}
+
+model RetrainJob {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  triggeredBy String?
+  status      String   @default("queued")
+  priority    Int      @default(0)
+  sampleCount Int      @default(0)
+  metadata    Json?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  error       String?
 }
 
 model Jurisdiction {
