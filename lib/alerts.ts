@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { sendSlackAlert as sendSlack } from "./alerts/sendSlackAlert";
+import { sendErrorAlert } from "./alerts/sendErrorAlert";
 
 export async function runAlertSweep() {
   const rules = await prisma.alertRule.findMany({ where: { active: true } });
@@ -15,6 +16,7 @@ export async function runAlertSweep() {
       }
       created++;
       await sendSlack(`ALERT: ${r.kind} on ${r.scope} exceeded threshold`);
+      try { await sendErrorAlert({ subject: `Alert: ${r.kind}`, message: `Scope: ${r.scope} threshold ${r.threshold} exceeded.` }); } catch {}
     }
   }
   return { created };

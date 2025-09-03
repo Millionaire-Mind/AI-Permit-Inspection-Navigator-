@@ -7,6 +7,7 @@ export async function setupScheduler() {
     const cron = (eval('require') as any)("node-cron");
     const { forecastRunnerJob } = await import("@/lib/jobs/forecastRunner");
     const { scheduleRetrainIfNeeded } = await import("@/lib/ml/retrainScheduler");
+    const { runAlertSweep } = await import("@/lib/alerts");
 
     // Run forecast every 6 hours
     cron.schedule("0 */6 * * *", async () => {
@@ -25,6 +26,16 @@ export async function setupScheduler() {
         await scheduleRetrainIfNeeded({ minSamples: 200 });
       } catch (e) {
         console.error("Retrain schedule error", e);
+      }
+    });
+
+    // Alert sweep every 10 minutes
+    cron.schedule("*/10 * * * *", async () => {
+      try {
+        console.log("[scheduler] Running alert sweep");
+        await runAlertSweep();
+      } catch (e) {
+        console.error("Alert sweep error", e);
       }
     });
   } catch (e: any) {
