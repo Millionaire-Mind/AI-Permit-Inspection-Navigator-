@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 // Define roles and their inheritance
 const rolesHierarchy: { [role: string]: string[] } = {
@@ -14,11 +15,24 @@ const routeRoles: { [pathPattern: string]: string } = {
   "/protected/:path*": "viewer",
 };
 
-export function middleware(req: NextRequest) {
-  const role = req.cookies.get("role")?.value;
+export async function middleware(req: NextRequest) {
+  // Try NextAuth JWT (if using session: 'jwt')
+  let role: string | undefined = undefined;
+  const token = req.cookies.get("next-auth.session-token")?.value || req.cookies.get("__Secure-next-auth.session-token")?.value;
+  if (token && process.env.NEXTAUTH_SECRET) {
+    try {
+      const { payload } = await jwtVerify(new TextEncoder().encode(token), new TextEncoder().encode(process.env.NEXTAUTH_SECRET));
+      // @ts-ignore
+      role = payload?.role?.toString().toLowerCase();
+    } catch {}
+  }
+
+  if (!role) {
+    // Fallback to legacy cookie for local demos
+    role = req.cookies.get("role")?.value;
+  }
 
   if (!role || !(role in rolesHierarchy)) {
-    // No valid role cookie → redirect to login
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
