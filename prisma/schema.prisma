@@ -14,12 +14,11 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  audits             Audit[]             @relation("ActorAudits")
-  aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
-  actorUser          Audit[]             @relation("ActorUser")
+  audits     Audit[] @relation("ActorAudits")
+  actorUser  Audit[] @relation("ActorUser")
   // Phase 1 relations
-  reports            Report[]
-  pdfExports         PdfExport[]
+  reports    Report[]
+  pdfExports PdfExport[]
 }
 
 model Audit {
@@ -28,13 +27,6 @@ model Audit {
   actor   User    @relation("ActorAudits", fields: [actorId], references: [id])
   userId  String?
   user    User?   @relation("ActorUser", fields: [userId], references: [id])
-}
-
-model AITrainingExample {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation("UserAITrainingExamples", fields: [userId], references: [id])
-  // add other fields here
 }
 
 // Phase 1 core entities
