@@ -26,6 +26,7 @@
     "json2csv": "^5.0.6",
     "next": "14.1.0",
     "next-auth": "^4.24.11",
+    "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -48,6 +49,6 @@
     "typescript": "^5.4.5"
   },
   "prisma": {
-  "seed": "node prisma/seed.js"
-}
+    "seed": "node prisma/seed.js"
+  }
 }

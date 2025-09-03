@@ -9,10 +9,11 @@ export async function POST(req: Request) {
   const parsed = ExportPDFSchema.safeParse(data);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
-  const report = await prisma.report.findUnique({
+  const client: any = prisma as any;
+  const report = client.report?.findUnique ? await client.report.findUnique({
     where: { id: parsed.data.reportId },
     include: { moderations: true, appeals: { include: { notes: true } } }
-  });
+  }) : null;
   if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
   const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null } as any));

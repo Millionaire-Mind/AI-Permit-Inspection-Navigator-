@@ -1,7 +1,11 @@
 import db from "@/lib/db";
-import fetch from "node-fetch";
-import fs from "fs";
-import path from "path";
+// These are server-only and may not be available during client bundling. Guard their usage.
+let fs: typeof import('fs') | null = null;
+let path: typeof import('path') | null = null;
+try {
+  fs = require('fs');
+  path = require('path');
+} catch {}
 import { collectCandidates } from "./feedbackAggregator";
 
 const TRAINING_SERVICE_URL = process.env.TRAINING_SERVICE_URL || "http://localhost:8000";
@@ -45,9 +49,11 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
   });
 
   try {
-    const tmpDir = path.join(process.cwd(), "tmp");
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, `retrain-${job.id}.json`), JSON.stringify({ jobId: job.id, samples }, null, 2));
+    if (fs && path) {
+      const tmpDir = path.join(process.cwd(), "tmp");
+      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, `retrain-${job.id}.json`), JSON.stringify({ jobId: job.id, samples }, null, 2));
+    }
   } catch (e) {
     console.warn("Failed to write tmp retrain file", e);
   }

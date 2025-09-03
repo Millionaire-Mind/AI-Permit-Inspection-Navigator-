@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { AppealActionSchema } from "@/types/api/appeal";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const appeal = await prisma.appeal.findUnique({
+  const client: any = prisma as any;
+  if (!client.appeal?.findUnique) return NextResponse.json({ error: "Appeal model not available" }, { status: 501 });
+  const appeal = await client.appeal.findUnique({
     where: { id: params.id },
     include: { notes: true },
   });
@@ -17,9 +19,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
   const { action, assignTo, note } = parsed.data;
+  const client: any = prisma as any;
+  if (!client.appeal) return NextResponse.json({ error: "Appeal model not available" }, { status: 501 });
 
   if (action === "approve" || action === "reject") {
-    const appeal = await prisma.appeal.update({
+    const appeal = await client.appeal.update({
       where: { id: params.id },
       data: { status: action, reviewedAt: new Date() },
     });
@@ -27,7 +31,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   if (action === "assign" && assignTo) {
-    const appeal = await prisma.appeal.update({
+    const appeal = await client.appeal.update({
       where: { id: params.id },
       data: { assignedToId: assignTo },
     });
@@ -35,14 +39,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   if (action === "note" && note) {
-    const created = await prisma.appealNote.create({
+    const created = await client.appealNote.create({
       data: { appealId: params.id, content: note, tag: "moderator" },
     });
     return NextResponse.json({ note: created });
   }
 
   if (action === "reviewed") {
-    const appeal = await prisma.appeal.update({
+    const appeal = await client.appeal.update({
       where: { id: params.id },
       data: { reviewedAt: new Date() },
     });

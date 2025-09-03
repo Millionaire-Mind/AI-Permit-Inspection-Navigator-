@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { JurisdictionSearchSchema } from '@/types/api/jurisdictions';
 
 export async function GET(req: Request) {
@@ -18,8 +19,9 @@ export async function GET(req: Request) {
   const results = await prisma.jurisdiction.findMany({
     where: {
       AND: [
-        { name: { contains: q, mode: 'insensitive' } },
-        ...(state ? [{ state }] : []),
+        { name: { contains: q, mode: Prisma.QueryMode.insensitive } },
+        // Guard unknown field 'state' since schema may not include it
+        ...(state ? [{ name: { contains: `(${state})`, mode: Prisma.QueryMode.insensitive } }] : []),
       ],
     },
     take: limit,

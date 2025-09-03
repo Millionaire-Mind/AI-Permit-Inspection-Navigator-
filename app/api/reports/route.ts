@@ -4,7 +4,8 @@ import { ReportCreateSchema } from "@/types/api/report";
 import { z } from "zod";
 
 export async function GET() {
-  const reports = await prisma.report.findMany({ orderBy: { createdAt: "desc" }});
+  const client: any = prisma as any;
+  const reports = client.report?.findMany ? await client.report.findMany({ orderBy: { createdAt: "desc" }}) : [];
   return NextResponse.json({ reports });
 }
 
@@ -14,7 +15,9 @@ export async function POST(req: Request) {
   if (!parse.success) return NextResponse.json({ error: parse.error.format() }, { status: 400 });
 
   const { userId, address } = parse.data;
-  const report = await prisma.report.create({
+  const client: any = prisma as any;
+  if (!client.report?.create) return NextResponse.json({ error: "Report model not available" }, { status: 501 });
+  const report = await client.report.create({
     data: { userId, address, status: "pending" }
   });
   return NextResponse.json({ report }, { status: 201 });

@@ -1,10 +1,11 @@
-import cron from "node-cron";
-import { forecastRunnerJob } from "./jobs/forecastRunner";
-import { scheduleRetrainIfNeeded } from "./ml/retrainScheduler";
-
-const g: any = globalThis as any;
-if (!g.__schedulerInitialized) {
+export function setupScheduler() {
+  const g: any = globalThis as any;
+  if (g.__schedulerInitialized) return;
   g.__schedulerInitialized = true;
+
+  const cron = (eval('require') as any)("node-cron");
+  const { forecastRunnerJob } = (eval('require') as any)("./jobs/forecastRunner");
+  const { scheduleRetrainIfNeeded } = (eval('require') as any)("./ml/retrainScheduler");
 
   // Run forecast every 6 hours
   cron.schedule("0 */6 * * *", async () => {
@@ -26,3 +27,4 @@ if (!g.__schedulerInitialized) {
     }
   });
 }
+

@@ -14,17 +14,15 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 
-  audits             Audit[]             @relation("ActorAudits")
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
-  actorUser          Audit[]             @relation("ActorUser")
 }
 
 model Audit {
-  id      String  @id @default(uuid())
-  actorId String
-  actor   User    @relation("ActorAudits", fields: [actorId], references: [id])
-  userId  String?
-  user    User?   @relation("ActorUser", fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  action    String
+  actor     String?
+  detail    Json?
+  createdAt DateTime @default(now())
 }
 
 model AITrainingExample {
@@ -71,4 +69,38 @@ model AlertRule {
   windowHours Int      @default(24)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
+}
+
+model ForecastLog {
+  id          String   @id @default(cuid())
+  triggeredAt DateTime @default(now())
+  results     Json
+}
+
+model SLATask {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  priority     String
+  dueAt        DateTime
+  assignedTeam String?
+  status       String
+  type         String
+  createdAt    DateTime @default(now())
+}
+
+model SLASettings {
+  id        String @id @default(cuid())
+  category  String
+  threshold Int
+  teamId    String?
+}
+
+model ProductionModel {
+  id           String   @id @default(cuid())
+  modelVersion String   @unique
+  stage        String
+  deployedBy   String?
+  deployedAt   DateTime @default(now())
+  metadata     Json?
 }

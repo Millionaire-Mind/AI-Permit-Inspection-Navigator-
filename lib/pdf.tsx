@@ -1,4 +1,5 @@
 import React from "react";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 type ReportPdfProps = {
 title?: string;
@@ -20,4 +21,26 @@ Project: {projectName}
 Created: {createdAt}
 </>
 );
+}
+
+const styles = StyleSheet.create({
+  page: { padding: 24 },
+  title: { fontSize: 18, marginBottom: 8 },
+  row: { marginBottom: 4 }
+});
+
+export function ReportPDF(props: { report: any; timezone: string; noteTagFilter: string | null }) {
+  const { report } = props;
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View>
+          <Text style={styles.title}>{report?.title ?? "Report"}</Text>
+          <Text style={styles.row}>Status: {report?.status ?? "unknown"}</Text>
+          <Text style={styles.row}>Address: {report?.address ?? "—"}</Text>
+          <Text style={styles.row}>Created: {report?.createdAt ? String(report.createdAt) : "—"}</Text>
+        </View>
+      </Page>
+    </Document>
+  );
 }
