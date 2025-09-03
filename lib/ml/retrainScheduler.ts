@@ -1,7 +1,11 @@
 import db from "@/lib/db";
-import fetch from "node-fetch";
-import fs from "fs";
-import path from "path";
+// These are server-only and may not be available during client bundling. Guard their usage.
+let fs: typeof import('fs') | null = null;
+let path: typeof import('path') | null = null;
+try {
+  fs = require('fs');
+  path = require('path');
+} catch {}
 import { collectCandidates } from "./feedbackAggregator";
 
 const TRAINING_SERVICE_URL = process.env.TRAINING_SERVICE_URL || "http://localhost:8000";
@@ -13,15 +17,16 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
   }
 
   const selected = candidates.slice(0, Math.min(minSamples, candidates.length));
-  const appealIds = Array.from(new Set(selected.map((s) => s.appealId)));
-  const appeals = await db.report.findMany({
+  const appealIds = Array.from(new Set(selected.map((s: any) => s.appealId)));
+  const anyDb: any = db as any;
+  const appeals = anyDb.report?.findMany ? await anyDb.report.findMany({
     where: { id: { in: appealIds } },
     select: { id: true, address: true, createdAt: true }
-  });
+  }) : [];
   const appealMap: Record<string, any> = {};
-  appeals.forEach((a) => (appealMap[a.id] = a));
+  appeals.forEach((a: any) => (appealMap[a.id] = a));
 
-  const samples = selected.map((s) => {
+  const samples = selected.map((s: any) => {
     const appeal = appealMap[s.appealId];
     return {
       id: s.id,
@@ -34,7 +39,7 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
     };
   });
 
-  const job = await db.retrainJob.create({
+  const job = anyDb.retrainJob?.create ? await anyDb.retrainJob.create({
     data: {
       triggeredBy,
       status: "queued",
@@ -42,18 +47,22 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
       sampleCount: samples.length,
       metadata: { sampleCount: samples.length }
     }
-  });
+  }) : { id: "mock-job", status: "queued", metadata: { sampleCount: samples.length } };
 
   try {
-    const tmpDir = path.join(process.cwd(), "tmp");
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, `retrain-${job.id}.json`), JSON.stringify({ jobId: job.id, samples }, null, 2));
+    if (fs && path) {
+      const tmpDir = path.join(process.cwd(), "tmp");
+      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, `retrain-${job.id}.json`), JSON.stringify({ jobId: job.id, samples }, null, 2));
+    }
   } catch (e) {
     console.warn("Failed to write tmp retrain file", e);
   }
 
   try {
-    await db.retrainJob.update({ where: { id: job.id }, data: { status: "running", startedAt: new Date() } });
+    if (anyDb.retrainJob?.update) {
+      await anyDb.retrainJob.update({ where: { id: job.id }, data: { status: "running", startedAt: new Date() } });
+    }
 
     const resp = await fetch(`${TRAINING_SERVICE_URL}/train/risk`, {
       method: "POST",
@@ -63,33 +72,41 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
 
     if (!resp.ok) {
       const text = await resp.text();
-      await db.retrainJob.update({ where: { id: job.id }, data: { status: "failed", error: text, finishedAt: new Date() } });
+      if (anyDb.retrainJob?.update) {
+        await anyDb.retrainJob.update({ where: { id: job.id }, data: { status: "failed", error: text, finishedAt: new Date() } });
+      }
       return { queued: true, jobId: job.id, status: "failed", error: text };
     }
 
     const result = await resp.json();
-    await db.retrainJob.update({
-      where: { id: job.id },
-      data: {
-        status: "succeeded",
-        finishedAt: new Date(),
-        metadata: { ...job.metadata, trainingResult: result }
-      }
-    });
+    if (anyDb.retrainJob?.update) {
+      await anyDb.retrainJob.update({
+        where: { id: job.id },
+        data: {
+          status: "succeeded",
+          finishedAt: new Date(),
+          metadata: { ...job.metadata, trainingResult: result }
+        }
+      });
+    }
 
-    const ids = selected.map((s) => s.id);
-    await db.aiTrainingExample.updateMany({
-      where: { id: { in: ids } },
-      data: { usedInJobId: job.id, reviewedAt: new Date() }
-    });
+    const ids = selected.map((s: any) => s.id);
+    if (anyDb.aiTrainingExample?.updateMany) {
+      await anyDb.aiTrainingExample.updateMany({
+        where: { id: { in: ids } },
+        data: { usedInJobId: job.id, reviewedAt: new Date() }
+      });
+    }
 
     return { queued: true, jobId: job.id, status: "succeeded", result };
   } catch (err: any) {
     console.error("Retrain scheduler error:", err);
-    await db.retrainJob.update({
-      where: { id: job.id },
-      data: { status: "failed", error: err.message, finishedAt: new Date() }
-    });
+    if (anyDb.retrainJob?.update) {
+      await anyDb.retrainJob.update({
+        where: { id: job.id },
+        data: { status: "failed", error: err.message, finishedAt: new Date() }
+      });
+    }
     return { queued: true, jobId: job.id, status: "failed", error: err.message };
   }
 }

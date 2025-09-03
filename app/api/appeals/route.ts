@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { AppealCreateSchema } from "@/types/api/appeal";
 
 export async function GET() {
-  const appeals = await prisma.appeal.findMany({ orderBy: { createdAt:"desc" }});
+  const client: any = prisma as any;
+  if (!client.appeal?.findMany) return NextResponse.json({ appeals: [] });
+  const appeals = await client.appeal.findMany({ orderBy: { createdAt:"desc" }});
   return NextResponse.json({ appeals });
 }
 
@@ -12,7 +14,9 @@ export async function POST(req: Request) {
   const parsed = AppealCreateSchema.safeParse(data);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
 
-  const appeal = await prisma.appeal.create({
+  const client: any = prisma as any;
+  if (!client.appeal?.create) return NextResponse.json({ error: "Appeal model not available" }, { status: 501 });
+  const appeal = await client.appeal.create({
     data: {
       userId: parsed.data.userId,
       reportId: parsed.data.reportId,

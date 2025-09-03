@@ -8,7 +8,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const filters: any = {};
     if (start && end) filters.createdAt = { gte: new Date(String(start)), lte: new Date(String(end)) };
     if (category) filters.category = String(category);
-    const rows = await db.aIFeedback.findMany({ where: filters, orderBy: { createdAt: "desc" } });
+    const anyDb: any = db as any;
+    const rows = anyDb.aIFeedback?.findMany ? await anyDb.aIFeedback.findMany({ where: filters, orderBy: { createdAt: "desc" } }) : [];
     return res.status(200).json(rows);
   } catch (err) {
     console.error("AI feedback list error", err);

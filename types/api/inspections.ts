@@ -19,7 +19,7 @@ export const BuildInspectionPlanResponseSchema = z.object({
   items: z.array(InspectionItemSchema),
   confidence: z.object({
     score: z.number().min(0).max(1),
-    factors: z.record(z.any()).optional(),
+    factors: z.record(z.string(), z.any()).optional(),
   }),
 });
 export type BuildInspectionPlanResponse = z.infer<typeof BuildInspectionPlanResponseSchema>;

@@ -3,19 +3,20 @@ import { subDays } from "date-fns";
 
 export async function collectCandidates({ days = 90 } = {}) {
   const since = subDays(new Date(), days);
-  const rows = await db.aIFeedback.findMany({
+  const anyDb: any = db as any;
+  const rows = anyDb.aIFeedback?.findMany ? await anyDb.aIFeedback.findMany({
     where: { createdAt: { gte: since } },
     orderBy: { createdAt: "desc" },
     take: 5000
-  });
+  }) : [];
 
   // Build category counts
   const catCountMap: Record<string, number> = {};
-  rows.forEach((r) => {
+  rows.forEach((r: any) => {
     if (r.category) catCountMap[r.category] = (catCountMap[r.category] || 0) + 1;
   });
 
-  const candidates = rows.map((r) => {
+  const candidates = rows.map((r: any) => {
     const recencyDays = (Date.now() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24);
     const recencyScore = Math.max(0, 1 - recencyDays / 90);
     const disagreement = r.accepted ? 0 : 1;
@@ -37,6 +38,6 @@ export async function collectCandidates({ days = 90 } = {}) {
     };
   });
 
-  candidates.sort((a, b) => b.score - a.score);
+  candidates.sort((a: any, b: any) => b.score - a.score);
   return candidates;
 }

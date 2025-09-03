@@ -1,8 +1,15 @@
+import { z } from "zod";
+
 export const AppealActionSchema = z.object({
-  actionType: z.string(),
-  performedBy: z.string(),
-  performedAt: z.string().optional(),
-  // add other fields as needed
+  action: z.enum(["approve", "reject", "assign", "note", "reviewed"]),
+  assignTo: z.string().optional(),
+  note: z.string().optional()
 });
 
 export type AppealActionInput = z.infer<typeof AppealActionSchema>;
+
+export const AppealCreateSchema = z.object({
+  userId: z.string(),
+  reportId: z.string(),
+  reason: z.string().min(1)
+});

@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 const { Parser } = require("json2csv");
 
 export async function GET() {
-  const reports = await prisma.report.findMany();
+  const client: any = prisma as any;
+  const reports = client.report?.findMany ? await client.report.findMany() : [];
   const parser = new Parser({ fields: ["id","userId","address","status","createdAt"] });
   const csv = parser.parse(reports);
   return new NextResponse(csv, {

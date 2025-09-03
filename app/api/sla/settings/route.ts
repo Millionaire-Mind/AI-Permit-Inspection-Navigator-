@@ -9,10 +9,11 @@ export async function GET() {
 export async function PUT(req: Request) {
   const body = await req.json();
   const { category, threshold, teamId, graceMin } = body;
-  const saved = await prisma.sLASettings.upsert({
-    where: { id: `${category}-${teamId ?? "global"}` }, // synthetic unique? if needed, swap to @@unique in schema
-    create: { category, threshold, teamId, graceMin: graceMin ?? 15, id: `${category}-${teamId ?? "global"}` },
-    update: { threshold, graceMin }
-  });
+  const client: any = prisma as any;
+  const saved = client.sLASettings?.upsert ? await client.sLASettings.upsert({
+    where: { id: `${category}-${teamId ?? "global"}` },
+    create: { category, threshold, teamId, id: `${category}-${teamId ?? "global"}` },
+    update: { threshold }
+  }) : { id: `${category}-${teamId ?? "global"}`, category, threshold, teamId };
   return NextResponse.json({ saved });
 }

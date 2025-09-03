@@ -7,7 +7,7 @@ export const CreateProjectSchema = z.object({
   subType: z.string().optional(),
   description: z.string().optional(),
   address: z.string().optional(),
-  params: z.record(z.any()).optional(),
+  params: z.record(z.string(), z.any()).optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;

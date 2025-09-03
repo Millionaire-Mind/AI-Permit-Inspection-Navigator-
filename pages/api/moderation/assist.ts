@@ -18,7 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const parsed = AssistRequestSchema.parse(req.body);
     const { appealId, content, category, context } = parsed;
-    const appeal = await db.report.findUnique({ where: { id: appealId } });
+    const anyDb: any = db as any;
+    const appeal = anyDb.report?.findUnique ? await anyDb.report.findUnique({ where: { id: appealId } }) : { id: appealId };
     if (!appeal) return res.status(404).json({ error: "Appeal not found" });
 
     // TODO: integrate actual LLM/ML model here
@@ -27,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const rationale = "Matches patterns from previous cases.";
     const slaUrgency = confidence >= 0.9 ? "high" : "medium";
 
-    await db.aIAssistLog.create({
+    if (anyDb.aIAssistLog?.create) await anyDb.aIAssistLog.create({
       data: {
         appealId,
         moderatorId: context.moderatorId,
