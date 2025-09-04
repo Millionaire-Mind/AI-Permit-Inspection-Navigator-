@@ -8,11 +8,16 @@
     "start": "next start -p 3000",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "jest",
+    "test:ci": "jest --ci --reporters=default --reporters=jest-junit",
+    "e2e": "playwright test --reporter=list",
+    "e2e:ci": "playwright test --reporter=junit --timeout=60000"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
@@ -42,6 +47,10 @@
     "@sentry/nextjs": "^8.23.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.1",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
+    "@types/jest": "^29.5.12",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.30",
@@ -52,6 +61,8 @@
     "autoprefixer": "^10.4.17",
     "eslint": "8.42.0",
     "eslint-config-next": "14.1.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.33",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
