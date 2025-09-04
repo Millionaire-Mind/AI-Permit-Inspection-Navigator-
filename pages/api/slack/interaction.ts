@@ -22,7 +22,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!isValidSlackSignature(req)) return res.status(401).json({ error: "invalid-signature" });
 
   const payload = typeof req.body?.payload === "string" ? JSON.parse(req.body.payload) : req.body;
-  // Handle interactive actions: approve/reject, etc.
-  // For now, echo back
+  const action = payload?.actions?.[0];
+  const actionId = action?.action_id as string | undefined;
+  const value = action?.value as string | undefined;
+
+  // Example approve/reject action handlers
+  if (actionId === 'approve_alert' || actionId === 'reject_alert') {
+    const approved = actionId === 'approve_alert';
+    // Here you could write an Audit or update a record
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      await prisma.audit.create({ data: { action: approved ? 'alert_approved' : 'alert_rejected', actor: 'slack', detail: { value } } as any });
+    } catch {}
+    return res.status(200).json({ text: approved ? '✅ Approved' : '❌ Rejected' });
+  }
+
   return res.status(200).json({ ok: true, received: payload?.type ?? "unknown" });
 }
