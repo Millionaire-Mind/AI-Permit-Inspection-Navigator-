@@ -4,6 +4,10 @@ export async function setupScheduler() {
   g.__schedulerInitialized = true;
 
   try {
+    if (process.env.ENABLE_INTERNAL_CRON !== 'true') {
+      console.log('[scheduler] Internal cron disabled. Use Vercel Cron or GitHub Actions.');
+      return;
+    }
     const cron = (eval('require') as any)("node-cron");
     const { forecastRunnerJob } = await import("@/lib/jobs/forecastRunner");
     const { scheduleRetrainIfNeeded } = await import("@/lib/ml/retrainScheduler");

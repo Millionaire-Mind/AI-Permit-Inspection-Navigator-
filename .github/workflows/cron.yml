@@ -1,0 +1,31 @@
+name: Scheduled Jobs
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # alerts every 10 min
+    - cron: '0 3 * * *'    # retrain
+    - cron: '0 4 * * *'    # exports cleanup
+  workflow_dispatch: {}
+
+jobs:
+  run-crons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call alerts
+        run: |
+          curl -X POST "$APP_URL/api/cron/alerts" -H "x-cron-secret: $CRON_SECRET"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - name: Call retrain
+        run: |
+          curl -X POST "$APP_URL/api/cron/retrain" -H "x-cron-secret: $CRON_SECRET"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - name: Call exports cleanup
+        run: |
+          curl -X POST "$APP_URL/api/cron/exports-cleanup" -H "x-cron-secret: $CRON_SECRET"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
