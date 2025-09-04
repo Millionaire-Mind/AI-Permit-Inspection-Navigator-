@@ -4,6 +4,7 @@ import { ReportPDF } from "@/lib/pdf";
 import { prisma } from "@/lib/prisma";
 import { ExportPDFSchema } from "@/types/api/export";
 import { canUseFeature } from "@/lib/featureGate";
+import { uploadBuffer } from "@/lib/storage";
 
 export async function POST(req: Request) {
   const data = await req.json();
@@ -21,22 +22,24 @@ export async function POST(req: Request) {
 
   const buf = await renderToBuffer(ReportPDF({ report, timezone: parsed.data.timezone ?? "America/Los_Angeles", noteTagFilter: parsed.data.noteTagFilter ?? null } as any));
 
-  // Persist PdfExport record if model exists
+  // Upload to S3/R2 and persist key
+  let key = `exports/reports/${report.id}-${Date.now()}.pdf`;
   try {
-    const saved = client.pdfExport?.create ? await client.pdfExport.create({
-      data: {
-        reportId: report.id,
-        userId: report.userId ?? "system",
-        fileUrl: `/api/exports/pdf?reportId=${report.id}`
-      }
-    }) : null;
-  } catch {}
-
-  return new NextResponse(buf as any, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="report-${report.id}.pdf"`
+    await uploadBuffer({ key, contentType: "application/pdf", body: Buffer.from(buf as any) });
+    if (client.pdfExport?.create) {
+      await client.pdfExport.create({ data: { reportId: report.id, userId: report.userId ?? "system", fileUrl: key } });
     }
-  });
+  } catch (e) {
+    console.error("Upload failed, falling back to direct response", e);
+    return new NextResponse(buf as any, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="report-${report.id}.pdf"`
+      }
+    });
+  }
+
+  // Respond with a small JSON that includes where to fetch a signed URL
+  return NextResponse.json({ ok: true, key });
 }

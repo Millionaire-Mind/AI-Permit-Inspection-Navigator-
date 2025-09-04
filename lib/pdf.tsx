@@ -24,8 +24,11 @@ Created: {createdAt}
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 24 },
-  title: { fontSize: 18, marginBottom: 8 },
+  page: { padding: 24, fontSize: 11, color: '#111827' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  brand: { fontSize: 18, fontWeight: 700 },
+  muted: { color: '#6b7280' },
+  sectionTitle: { fontSize: 14, marginTop: 10, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingBottom: 4 },
   row: { marginBottom: 4 }
 });
 
@@ -34,18 +37,23 @@ export function ReportPDF(props: { report: any; timezone: string; noteTagFilter:
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={styles.brand}>PermitIQ</Text>
+          <Text style={styles.muted}>Generated {new Date().toLocaleDateString()}</Text>
+        </View>
         <View>
-          <Text style={styles.title}>{report?.title ?? "Report"}</Text>
+          <Text style={styles.sectionTitle}>Report</Text>
+          <Text style={styles.row}>Title: {report?.title ?? "Report"}</Text>
           <Text style={styles.row}>Status: {report?.status ?? "unknown"}</Text>
           <Text style={styles.row}>Address: {report?.address ?? "—"}</Text>
           <Text style={styles.row}>Created: {report?.createdAt ? String(report.createdAt) : "—"}</Text>
         </View>
-        <View style={{ marginTop: 12 }}>
-          <Text style={{ fontSize: 14, marginBottom: 6 }}>Moderation Summary</Text>
+        <View>
+          <Text style={styles.sectionTitle}>Moderation Summary</Text>
           <Text style={styles.row}>Moderations: {Array.isArray(report?.moderations) ? report.moderations.length : 0}</Text>
         </View>
-        <View style={{ marginTop: 12 }}>
-          <Text style={{ fontSize: 14, marginBottom: 6 }}>Appeals</Text>
+        <View>
+          <Text style={styles.sectionTitle}>Appeals</Text>
           <Text style={styles.row}>Appeals Count: {Array.isArray(report?.appeals) ? report.appeals.length : 0}</Text>
         </View>
       </Page>
