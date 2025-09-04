@@ -28,6 +28,9 @@ export async function runAlertSweep() {
       created++;
       await sendSlack(`ALERT: ${r.kind} on ${r.scope} exceeded threshold`);
       try { const send = await loadEmailSender(); if (send) await send({ subject: `Alert: ${r.kind}`, message: `Scope: ${r.scope} threshold ${r.threshold} exceeded.` }); } catch {}
+      try {
+        await prisma.audit.create({ data: { action: "alert_generated", actor: "system", detail: { ruleId: r.id, kind: r.kind, scope: r.scope, threshold: r.threshold } } });
+      } catch {}
     }
   }
   return { created };

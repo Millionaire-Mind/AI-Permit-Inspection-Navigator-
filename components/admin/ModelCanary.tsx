@@ -4,11 +4,19 @@ import { useEffect, useState } from "react";
 export default function ModelCanary() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
+  const [models, setModels] = useState<any[]>([]);
+
+  async function loadModels() {
+    const res = await fetch("/api/ml/model/list", { headers: { "x-user-role": "admin" } });
+    const json = await res.json();
+    setModels(json || []);
+  }
 
   useEffect(() => {
     fetch("/api/ml/retrain/status", { headers: { "x-user-role": "admin" } })
       .then((r) => r.json())
       .then(setJobs);
+    loadModels();
   }, []);
 
   async function deployCanary(modelVersion: string) {
@@ -30,7 +38,7 @@ export default function ModelCanary() {
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">Model Canary & Promotion</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded shadow">
           <h2 className="font-semibold mb-2">Retrain Jobs</h2>
           <div className="space-y-2">
@@ -66,6 +74,10 @@ export default function ModelCanary() {
               <div className="mb-2"><strong>Validation:</strong>
                 <pre className="text-xs bg-gray-50 p-2 rounded mt-1">{JSON.stringify(selected.metadata?.trainingResult?.validation, null, 2)}</pre>
               </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="p-2 bg-gray-50 rounded"><div className="text-gray-600">Est. Inference Cost</div><div className="font-medium">${'{'}estimateCost(selected){'}'}</div></div>
+                <div className="p-2 bg-gray-50 rounded"><div className="text-gray-600">Compliance</div><div className="font-medium">{complianceStatus(selected)}</div></div>
+              </div>
               <div className="flex gap-2 mt-3">
                 <button onClick={() => deployCanary(selected.metadata?.trainingResult?.modelVersion)} className="px-3 py-1 bg-yellow-500 text-white rounded">Deploy Canary</button>
                 <button onClick={() => promoteProduction(selected.metadata?.trainingResult?.modelVersion)} className="px-3 py-1 bg-green-600 text-white rounded">Promote to Production</button>
@@ -75,7 +87,37 @@ export default function ModelCanary() {
             <div className="text-sm text-gray-500">Pick a retrain job to view details</div>
           )}
         </div>
+
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="font-semibold mb-2">Deployment History</h2>
+          <div className="space-y-2 max-h-80 overflow-auto">
+            {models.map((m) => (
+              <div key={m.id} className="border rounded p-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{m.modelVersion}</div>
+                    <div className="text-xs text-gray-600">{m.stage} • {new Date(m.deployedAt).toLocaleString()}</div>
+                  </div>
+                  {m.metadata?.canary && <span className="text-xs px-2 py-0.5 bg-yellow-100 rounded">canary</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
+}
+
+function estimateCost(job: any): string {
+  const tokens = job?.metadata?.trainingResult?.inferenceTokensPerReq ?? 1000;
+  const pricePer1k = 0.002; // demo
+  return (tokens / 1000 * pricePer1k).toFixed(4) + " / req";
+}
+
+function complianceStatus(job: any): string {
+  const checks = job?.metadata?.compliance?.checks ?? [];
+  if (!checks.length) return "Pending";
+  const failures = checks.filter((c: any) => c.status === "fail").length;
+  return failures === 0 ? "Pass" : `Fail (${failures})`;
 }
