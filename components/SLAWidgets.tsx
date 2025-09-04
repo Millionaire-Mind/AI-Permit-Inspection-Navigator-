@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, SectionTitle } from "./UiPrimitives";
+import type { AdminFilters } from "@/components/admin/AdminFilters";
 
-export default function SLAWidgets() {
+export default function SLAWidgets({ filters }: { filters?: AdminFilters }) {
   const [stats, setStats] = useState<any>(null);
 
-  useEffect(() => { fetch("/api/sla/stats").then(r=>r.json()).then(setStats); }, []);
+  const query = useMemo(() => {
+    const params = new URLSearchParams();
+    if (filters?.userId) params.append("userId", filters.userId);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.slaBreachOnly) params.append("slaBreachOnly", "1");
+    if (filters?.from) params.append("from", filters.from);
+    if (filters?.to) params.append("to", filters.to);
+    const s = params.toString();
+    return s ? `?${s}` : "";
+  }, [filters?.userId, filters?.status, filters?.slaBreachOnly, filters?.from, filters?.to]);
+
+  useEffect(() => { fetch(`/api/sla/stats${query}`).then(r=>r.json()).then(setStats); }, [query]);
 
   if (!stats) return <Card>Loading SLA…</Card>;
 

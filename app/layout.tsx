@@ -1,5 +1,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
+try { require("@/sentry.client.config"); } catch {}
 
 export const metadata = {
   title: "AI Permit & Inspection Navigator",

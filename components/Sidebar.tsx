@@ -26,6 +26,12 @@ export default function Sidebar() {
       </div>
       <nav className="flex flex-col gap-2 text-sm">
         <a href="/dashboard">Dashboard</a>
+        <a href="/ask-ai">Ask AI</a>
+        <a href="/projects">Projects</a>
+        <a href="/forms">Forms</a>
+        <a href="/checklist">Checklist</a>
+        <a href="/(billing)/billing">Billing</a>
+        <a href="/settings">Settings</a>
         <a href="/moderator/review">Moderator Review</a>
         <a href="/moderator/alerts">Alerts</a>
         <a href="/admin">Admin</a>

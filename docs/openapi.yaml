@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: AI Permit & Inspection Navigator API
+  version: 1.0.0
+servers:
+  - url: https://your-deployment.example.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local
+paths:
+  /api/health:
+    get:
+      summary: Healthcheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  time:
+                    type: string
+                    format: date-time
+                  uptimeMs:
+                    type: number
+  /api/alerts/rules:
+    get:
+      summary: List active alert rules
+      responses:
+        '200':
+          description: Rules
+    post:
+      summary: Create alert rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scope: { type: string }
+                scopeRef: { type: string, nullable: true }
+                kind: { type: string }
+                threshold: { type: number }
+                windowHours: { type: integer }
+      responses:
+        '201': { description: Created }
+    put:
+      summary: Update alert rule
+      responses:
+        '200': { description: Updated }
+    delete:
+      summary: Delete alert rule
+      responses:
+        '204': { description: Deleted }
+  /api/alerts/timeline:
+    get:
+      summary: Get alert and audit timeline
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+        - in: query
+          name: userId
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        '200': { description: Timeline events }
+  /api/ml/retrain/status:
+    get:
+      summary: List retrain jobs
+      responses:
+        '200': { description: Jobs }
+  /api/ml/retrain/job/{id}:
+    get:
+      summary: Get retrain job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Job }
+        '404': { description: Not Found }
+  /api/ml/model/list:
+    get:
+      summary: List deployed models
+      responses:
+        '200': { description: Models }
+  /api/slack/commands:
+    post:
+      summary: Slack slash commands endpoint
+      responses:
+        '200': { description: OK }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
