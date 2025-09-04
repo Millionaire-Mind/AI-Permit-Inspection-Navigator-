@@ -6,12 +6,6 @@ function requireEnv(name: string) {
   return v;
 }
 
-async function getStripeClient() {
-  const key = requireEnv("STRIPE_SECRET_KEY");
-  const stripe = (eval('require') as any)("stripe")(key, { apiVersion: "2023-10-16" });
-  return stripe as any;
-}
-
 export async function canUseFeature({ feature, userEmail }: { feature: FeatureName; userEmail?: string | null }) {
   // Basic global toggle for quick testing
   if (process.env.SAAS_DISABLE === "true") return true;
@@ -24,14 +18,13 @@ export async function canUseFeature({ feature, userEmail }: { feature: FeatureNa
   if (!userEmail) return false;
 
   try {
-    const stripe = await getStripeClient();
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-    const customer = customers.data[0];
-    if (!customer) return false;
-    const subs = await stripe.subscriptions.list({ customer: customer.id, status: "active", limit: 1 });
-    return subs.data.length > 0;
+    const { prisma } = await import("@/lib/prisma");
+    const anyDb: any = prisma as any;
+    const user = await anyDb.user.findUnique({ where: { email: userEmail.toLowerCase() } });
+    if (!user) return false;
+    return (user.subscriptionStatus ?? "inactive") === "active";
   } catch (e) {
-    console.warn("featureGate check failed", e);
+    console.warn("featureGate DB check failed", e);
     return false;
   }
 }

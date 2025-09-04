@@ -18,6 +18,8 @@ model User {
   subscriptionStatus String? @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
+  subscriptions      Subscription[]
+  invoices           Invoice[]
 }
 
 enum Role {
@@ -111,4 +113,29 @@ model ProductionModel {
   deployedBy   String?
   deployedAt   DateTime @default(now())
   metadata     Json?
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id])
+  stripeCustomerId      String
+  stripeSubscriptionId  String   @unique
+  status                String
+  planId                String?
+  currentPeriodEnd      DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  stripeInvoiceId  String   @unique
+  amountTotal      Int?
+  currency         String?
+  status           String?
+  hostedInvoiceUrl String?
+  createdAt        DateTime @default(now())
 }
