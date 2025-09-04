@@ -8,11 +8,16 @@
     "start": "next start -p 3000",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "jest",
+    "test:ci": "jest --ci --reporters=default --reporters=jest-junit",
+    "e2e": "playwright test --reporter=list",
+    "e2e:ci": "playwright test --reporter=junit --timeout=60000"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
@@ -20,6 +25,7 @@
     "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/client": "^5.22.0",
     "@react-pdf/renderer": "^4.3.0",
+    "@sentry/nextjs": "^8.23.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
@@ -41,8 +47,12 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.1",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.11.30",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.15",
@@ -51,8 +61,13 @@
     "autoprefixer": "^10.4.17",
     "eslint": "8.42.0",
     "eslint-config-next": "14.1.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "postcss": "^8.4.33",
     "prisma": "^5.22.0",
+    "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   },
