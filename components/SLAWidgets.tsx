@@ -33,6 +33,21 @@ export default function SLAWidgets() {
         <SectionTitle>Exports</SectionTitle>
         <a className="underline" href="/api/exports/csv">Download CSV</a>
         <div className="mt-2 text-sm text-gray-600">PDFs are per report from the detail screen.</div>
+        <div className="mt-3">
+          <button
+            className="px-3 py-2 border rounded text-sm"
+            onClick={async () => {
+              const key = prompt("Enter export key (from PDF response)")?.trim();
+              if (!key) return;
+              const r = await fetch(`/api/exports/signed-url?key=${encodeURIComponent(key)}`);
+              const j = await r.json();
+              if (j.url) window.open(j.url, '_blank');
+              else alert('Failed to generate signed URL');
+            }}
+          >
+            Get Signed PDF Link
+          </button>
+        </div>
       </Card>
     </div>
   );
