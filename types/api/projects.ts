@@ -1,22 +1,31 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const CreateProjectSchema = z.object({
-  userId: z.string().uuid(),
-  jurisdictionId: z.string().uuid(),
-  type: z.string().min(2),
-  subType: z.string().optional(),
+  name: z.string(),
+  description: z.string().optional(),
+  address: z.string(),
+  jurisdictionId: z.string(),
+  status: z.enum(['DRAFT', 'SUBMITTED', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'COMPLETED', 'CANCELLED']).optional(),
+  valuation: z.number().optional(),
+  sqft: z.number().optional(),
+  scope: z.string().optional(),
+  params: z.any().optional(),
+});
+
+export const ProjectListQuerySchema = z.object({
+  userId: z.string(),
+  jurisdictionId: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  cursor: z.string().optional(),
+});
+
+export const UpdateProjectSchema = z.object({
+  name: z.string().optional(),
   description: z.string().optional(),
   address: z.string().optional(),
   params: z.record(z.string(), z.any()).optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
-
-export const ProjectListQuerySchema = z.object({
-  userId: z.string().uuid(),
-  jurisdictionId: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  cursor: z.string().uuid().optional(),
-});
-
 export type ProjectListQuery = z.infer<typeof ProjectListQuerySchema>;
+export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;

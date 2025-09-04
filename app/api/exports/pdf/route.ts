@@ -6,6 +6,8 @@ import { ExportPDFSchema } from "@/types/api/export";
 import { canUseFeature } from "@/lib/featureGate";
 import { uploadBuffer } from "@/lib/storage";
 
+export const dynamic = 'force-dynamic'; // Force dynamic rendering
+
 export async function POST(req: Request) {
   const data = await req.json();
   const parsed = ExportPDFSchema.safeParse(data);
