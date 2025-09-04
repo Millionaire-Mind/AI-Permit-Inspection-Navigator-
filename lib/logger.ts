@@ -22,9 +22,3 @@ export async function logRequest(request: Request, extra?: Record<string, unknow
     logger.warn("logRequest_failed", { error: e?.message });
   }
 }
-
-export const logger = {
-  info: (...args: any[]) => console.log("[INFO]", ...args),
-  warn: (...args: any[]) => console.warn("[WARN]", ...args),
-  error: (...args: any[]) => console.error("[ERROR]", ...args)
-};
