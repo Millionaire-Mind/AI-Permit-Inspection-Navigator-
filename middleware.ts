@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logRequest } from "@/lib/logger";
 import { jwtVerify } from "jose";
 
 // Define roles and their inheritance
@@ -16,6 +17,25 @@ const routeRoles: { [pathPattern: string]: string } = {
 };
 
 export async function middleware(req: NextRequest) {
+  // Basic request logging
+  await logRequest(req as any);
+
+  // Simple rate limit (per IP per minute) using in-memory Map (best-effort)
+  // For production, replace with Redis or durable store.
+  try {
+    const ip = req.ip || req.headers.get("x-forwarded-for") || "unknown";
+    const key = `${ip}:${new Date().getUTCFullYear()}-${new Date().getUTCMonth()}-${new Date().getUTCDate()}-${new Date().getUTCHours()}-${new Date().getUTCMinutes()}`;
+    // @ts-ignore
+    globalThis.__rate = globalThis.__rate || new Map<string, number>();
+    // @ts-ignore
+    const store: Map<string, number> = globalThis.__rate;
+    const count = (store.get(key) || 0) + 1;
+    store.set(key, count);
+    const limit = Number(process.env.RATE_LIMIT_PER_MIN || 120);
+    if (count > limit && req.nextUrl.pathname.startsWith("/api/")) {
+      return new NextResponse("Rate limit exceeded", { status: 429 });
+    }
+  } catch {}
   // Try NextAuth JWT (if using session: 'jwt')
   let role: string | undefined = undefined;
   const token = req.cookies.get("next-auth.session-token")?.value || req.cookies.get("__Secure-next-auth.session-token")?.value;
