@@ -27,6 +27,8 @@ model User {
   invoices           Invoice[]
   applications       PermitApplication[]
   retrainJobs        RetrainJob[]
+  reports            Report[]
+  pdfExports         PdfExport[]
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -138,6 +140,31 @@ model RetrainJob {
   metadata    Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  address   String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  pdfs      PdfExport[]
+}
+
+model PdfExport {
+  id        String   @id @default(cuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  fileUrl   String
+  signedUrl String?
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@index([userId])
+  @@index([fileUrl])
 }
 
 model AlertRule {
