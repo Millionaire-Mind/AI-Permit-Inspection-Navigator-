@@ -70,6 +70,17 @@ model JobFailureLog {
   createdAt DateTime @default(now())
 }
 
+model RetrainSchedule {
+  id            String   @id @default("default")
+  enabled       Boolean  @default(true)
+  intervalHours Int?
+  cronExpr      String?
+  costAware     Boolean  @default(false)
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  updatedAt     DateTime @updatedAt
+}
+
 model AITrainingExample {
   id     String @id @default(uuid())
   userId String
