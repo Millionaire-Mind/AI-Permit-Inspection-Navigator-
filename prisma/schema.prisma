@@ -12,16 +12,15 @@ datasource db {
 // ========================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      UserRole @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  role      Role     @default(USER)
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  name               String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  role               Role     @default(USER)
   customerId         String?
-  subscriptionStatus String? @default("inactive")
+  subscriptionStatus String?  @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
   subscriptions      Subscription[]
@@ -106,7 +105,7 @@ model SLATask {
 }
 
 model SLASettings {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   category  String
   threshold Int
   teamId    String?
@@ -122,16 +121,16 @@ model ProductionModel {
 }
 
 model Subscription {
-  id                    String   @id @default(cuid())
-  userId                String
-  user                  User     @relation(fields: [userId], references: [id])
-  stripeCustomerId      String
-  stripeSubscriptionId  String   @unique
-  status                String
-  planId                String?
-  currentPeriodEnd      DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  stripeCustomerId     String
+  stripeSubscriptionId String    @unique
+  status               String
+  planId               String?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Invoice {
