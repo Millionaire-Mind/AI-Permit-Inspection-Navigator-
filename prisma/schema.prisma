@@ -25,6 +25,7 @@ model User {
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
   subscriptions      Subscription[]
   invoices           Invoice[]
+  applications       PermitApplication[]
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -33,6 +34,14 @@ model User {
 enum Role {
   USER
   ADMIN
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  VALIDATION_FAILED
+  IN_REVIEW
+  APPROVED
+  REJECTED
 }
 
 model Audit {
@@ -68,6 +77,8 @@ model Project {
   projectType    String?
   /** Optional free-form location string (city/county/state). Prefer joining through Jurisdiction */
   location       String?
+
+  applications   PermitApplication[]
 }
 
 model PermitRequirement {
@@ -93,6 +104,21 @@ model PermitType {
   name           String
 
   permitRequirements PermitRequirement[]
+}
+
+model PermitApplication {
+  id            String             @id @default(uuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  projectId     String
+  project       Project            @relation(fields: [projectId], references: [id])
+  data          Json
+  status        ApplicationStatus  @default(SUBMITTED)
+  submittedAt   DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
 }
 
 model AlertRule {
