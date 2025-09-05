@@ -1,24 +1,41 @@
 "use client";
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
+  const { status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [email, setEmail] = useState("superadmin@example.com");
   const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace(callbackUrl);
+    }
+  }, [status, router, callbackUrl]);
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const res = await signIn("credentials", { email, password, redirect: false });
+    setError(null);
+    const res = await signIn("credentials", { email, password, redirect: false, callbackUrl });
     setLoading(false);
-    if (res?.ok) window.location.href = "/dashboard";
-    else alert("Invalid credentials");
+    if (res?.ok) {
+      router.replace(res.url ?? callbackUrl);
+    } else {
+      setError(res?.error ?? "Invalid credentials");
+    }
   }
 
   return (
     <main className="space-y-4">
       <h1 className="text-2xl font-bold">Login</h1>
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <form onSubmit={login} className="space-y-3">
         <div className="flex flex-col">
           <label className="text-sm">Email</label>
