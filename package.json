@@ -67,11 +67,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-junit": "^16.0.0",
     "postcss": "^8.4.33",
-<<<<<<< Updated upstream
     "prisma": "^6.15.0",
-=======
-    "prisma": "^5.22.0",
->>>>>>> Stashed changes
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
