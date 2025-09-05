@@ -1,5 +1,366 @@
 openapi: 3.0.3
 info:
+  title: AI Permit Inspection Navigator API
+  version: 1.0.0
+  description: |
+    Public API endpoints for the AI Permit Inspection Navigator.
+    Some routes require an authenticated session; others are public (e.g., health).
+servers:
+  - url: https://your-production-domain
+  - url: http://localhost:3000
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                ok:
+                  value: { status: ok, time: '2025-01-01T12:00:00.000Z', uptimeMs: 123456 }
+
+  /api/permits/check:
+    get:
+      summary: Check permit requirements by context
+      operationId: checkPermitsByContext
+      parameters:
+        - in: query
+          name: project_type
+          required: true
+          schema: { type: string }
+        - in: query
+          name: location
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermitsByContextResponse'
+              examples:
+                example:
+                  value:
+                    jurisdiction: { id: 'c2a3e9b0-2a9e-4c0f-9a8a-2a0f1b2c3d4e', name: 'Seattle', slug: 'seattle-wa' }
+                    projectType: residential_remodel
+                    decisions:
+                      - { permitTypeId: '4b9a3a14-99e2-4a63-9019-3bc20a6bcb2a', permitTypeName: Building, status: required, rationale: 'Matched rule: …' }
+                    confidence: { score: 0.8 }
+        '400':
+          description: Validation error
+    post:
+      summary: Check permit requirements for a project
+      operationId: checkPermitsByProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckPermitsRequest'
+            examples:
+              example:
+                value: { projectId: 'b3a2e9c0-1a9b-4c0f-8a8a-1a0f1b2c3d4e' }
+      responses:
+        '200':
+          description: Decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckPermitsResponse'
+        '400': { description: Validation error }
+
+  /api/permits/submit:
+    post:
+      summary: Submit permit application
+      operationId: submitPermit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermitSubmissionRequest'
+            examples:
+              example:
+                value:
+                  projectId: 'b3a2e9c0-1a9b-4c0f-8a8a-1a0f1b2c3d4e'
+                  project: { type: electrical, location: 'seattle-wa', valuation: 7500 }
+                  applicant: { name: Jane Contractor, email: jane@example.com }
+      responses:
+        '200':
+          description: Submission result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermitSubmissionResponse'
+        '400': { description: Validation error }
+        '401': { description: Unauthorized }
+
+  /api/inspections/schedule:
+    post:
+      summary: Build inspection plan
+      operationId: buildInspectionPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildInspectionPlanRequest'
+            examples:
+              example:
+                value: { projectId: 'b3a2e9c0-1a9b-4c0f-8a8a-1a0f1b2c3d4e' }
+      responses:
+        '200':
+          description: Plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildInspectionPlanResponse'
+        '400': { description: Validation error }
+
+  /api/exports/pdf:
+    post:
+      summary: Generate and store PDF report
+      operationId: exportPdf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportPDFRequest'
+            examples:
+              example:
+                value: { reportId: 'rep_123', timezone: 'America/Los_Angeles' }
+      responses:
+        '200':
+          description: Stored in S3
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportPDFResponse'
+        '404': { description: Report not found }
+
+  /api/exports/signed-url:
+    get:
+      summary: Get signed URL for export
+      operationId: getSignedUrl
+      parameters:
+        - in: query
+          name: key
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+              examples:
+                example:
+                  value: { url: 'https://s3.amazonaws.com/bucket/exports/reports/x.pdf?X-Amz-SignedHeaders=...' }
+        '404': { description: Not found }
+
+  /api/stripe/checkout:
+    post:
+      summary: Create Stripe Checkout session
+      operationId: createCheckout
+      responses:
+        '200':
+          description: Redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+        '401': { description: Unauthorized }
+
+  /api/stripe/portal:
+    post:
+      summary: Create Stripe Billing Portal session
+      operationId: createPortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId: { type: string }
+              required: [customerId]
+      responses:
+        '200':
+          description: Redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+        '400': { description: Bad Request }
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        time: { type: string, format: date-time }
+        uptimeMs: { type: number }
+
+    CheckPermitsRequest:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+      required: [projectId]
+
+    PermitDecision:
+      type: object
+      properties:
+        permitTypeId: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [required, maybe, not_required]
+        rationale: { type: string, nullable: true }
+
+    CheckPermitsResponse:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+        decisions:
+          type: array
+          items: { $ref: '#/components/schemas/PermitDecision' }
+        confidence:
+          type: object
+          properties:
+            score: { type: number, minimum: 0, maximum: 1 }
+            factors:
+              type: object
+              additionalProperties: true
+
+    CheckPermitsByContextResponse:
+      type: object
+      properties:
+        jurisdiction:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            slug: { type: string, nullable: true }
+        projectType: { type: string }
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              permitTypeId: { type: string, format: uuid }
+              permitTypeName: { type: string, nullable: true }
+              status:
+                type: string
+                enum: [required, maybe, not_required]
+              rationale: { type: string, nullable: true }
+        confidence:
+          type: object
+          properties:
+            score: { type: number, minimum: 0, maximum: 1 }
+            factors:
+              type: object
+              additionalProperties: true
+
+    PermitSubmissionRequest:
+      type: object
+      properties:
+        userId: { type: string, format: uuid, nullable: true }
+        projectId: { type: string, format: uuid }
+        project:
+          type: object
+          nullable: true
+          properties:
+            type: { type: string }
+            location: { type: string }
+            valuation: { type: number, nullable: true }
+            sqft: { type: number, nullable: true }
+        applicant:
+          type: object
+          nullable: true
+          properties:
+            name: { type: string }
+            email: { type: string, format: email }
+        attachments:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              url: { type: string, format: uri }
+        extra:
+          type: object
+          additionalProperties: true
+      required: [projectId]
+
+    PermitSubmissionResponse:
+      type: object
+      properties:
+        status: { type: string, example: success }
+        applicationId: { type: string, format: uuid }
+
+    BuildInspectionPlanRequest:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+      required: [projectId]
+
+    InspectionItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        requiredAfter: { type: string, nullable: true }
+        orderIndex: { type: integer }
+        notes: { type: string, nullable: true }
+
+    BuildInspectionPlanResponse:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/InspectionItem' }
+        confidence:
+          type: object
+          properties:
+            score: { type: number, minimum: 0, maximum: 1 }
+            factors:
+              type: object
+              additionalProperties: true
+
+    ExportPDFRequest:
+      type: object
+      properties:
+        reportId: { type: string }
+        timezone: { type: string, nullable: true }
+        noteTagFilter: { type: string, nullable: true }
+      required: [reportId]
+
+    ExportPDFResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        key: { type: string }
+        signedUrl: { type: string, format: uri }
+
+openapi: 3.0.3
+info:
   title: AI Permit & Inspection Navigator API
   version: 1.0.0
 servers:

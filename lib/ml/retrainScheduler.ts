@@ -1,10 +1,13 @@
 import db from "@/lib/db";
-// These are server-only and may not be available during client bundling. Guard their usage.
-let fs: typeof import('fs') | null = null;
-let path: typeof import('path') | null = null;
+// Avoid static imports of Node built-ins in environments without Node polyfills.
+let fs: any = null;
+let path: any = null;
 try {
-  fs = require('fs');
-  path = require('path');
+  if (typeof process !== 'undefined' && (process as any).versions?.node) {
+    const req: any = (0, eval)("require");
+    fs = req('fs');
+    path = req('path');
+  }
 } catch {}
 import { collectCandidates } from "./feedbackAggregator";
 

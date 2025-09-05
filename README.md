@@ -2,81 +2,133 @@
 
 A **production-ready, enterprise-grade SaaS platform** for streamlining permit inspections and appeals processes with AI-powered automation.
 
-## 🚀 **Current Status: PRODUCTION READY**
+## 🚀 Current Status
+- Build: passing
+- TypeScript: strict
+- Auth: NextAuth (Credentials + Google)
+- DB: Prisma + PostgreSQL
+- CI: GitHub Actions (lint, typecheck, build, test)
 
-- ✅ **Build Status**: Successful (No errors or warnings)
-- ✅ **TypeScript**: 100% Compliant
-- ✅ **Authentication**: NextAuth.js fully integrated
-- ✅ **Database**: Comprehensive Prisma schema
-- ✅ **Security**: Role-based access control implemented
-- ✅ **Testing**: Automated smoke tests and manual QA checklist
+## 🧭 Onboarding (Developers)
 
-## 🎯 **Features**
+1) Prerequisites
+- Node 20+
+- PostgreSQL 14+ (local, Docker, or hosted)
+- pnpm/npm (examples use npm)
 
-## Setup
-1. Copy `.env.example` to `.env` and fill placeholders.
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+2) Clone & Install
+```bash
+git clone <repo>
+cd AI-Permit-Inspection-Navigator-
+npm install
+```
 
----
+3) Environment
+- Copy `.env.example` to `.env` (or `.env.local`) and fill in values from the section below.
 
-## Quickstart (Extended)
-1. Create `.env.local` from `.env.example` and fill values.
-2. Generate Prisma client and run migrations:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev
-   ```
-3. Start the dev server:
-   ```bash
-   npm run dev
-   ```
+4) Database
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
 
-### Environment Variables
-- DATABASE_URL=postgres://...
-- NEXTAUTH_SECRET=...
-- INFERENCE_URL=...
-- INFERENCE_API_KEY=...
-- TRAINING_SERVICE_URL=...
-- SLACK_ALERT_WEBHOOK=...
-- SLACK_SIGNING_SECRET=...
-- EMAIL_SMTP_HOST=...
-- EMAIL_USER=...
-- EMAIL_PASS=...
+5) Run
+```bash
+npm run dev
+```
+Visit http://localhost:3000
+
+6) Tests
+```bash
+npm run test       # unit
+npm run e2e        # e2e (ensure dev server is running)
+```
+
+## 🔐 Environment Variables (.env)
+
+Core
+- DATABASE_URL=postgres://user:pass@host:5432/db
+- NEXTAUTH_SECRET=your_generated_secret
+- NEXTAUTH_URL=http://localhost:3000 (dev)
+
+Auth (optional)
+- GOOGLE_CLIENT_ID=...
+- GOOGLE_CLIENT_SECRET=...
+
+Stripe (billing)
+- STRIPE_SECRET_KEY=sk_live_...
+- STRIPE_PRICE_ID=price_...
+- STRIPE_WEBHOOK_SECRET=whsec_...
+
+S3 (exports)
+- AWS_S3_BUCKET=your-bucket
+- AWS_REGION=us-east-1
+- AWS_ACCESS_KEY_ID=...
+- AWS_SECRET_ACCESS_KEY=...
+- AWS_ENDPOINT= (optional for R2)
+- AWS_S3_FORCE_PATH_STYLE=true (optional)
+
+Email (choose one provider)
+- RESEND_API_KEY=...
+- SENDGRID_API_KEY=...
+- SMTP_HOST=...
+- SMTP_PORT=587
+- SMTP_USER=...
+- SMTP_PASS=...
+- EMAIL_FROM="PermitIQ <no-reply@domain.com>"
+
+Sentry (observability)
 - SENTRY_DSN=...
 - NEXT_PUBLIC_SENTRY_DSN=...
+- SENTRY_TRACES_SAMPLE_RATE=0.1
+
+Slack (alerts & interactivity)
+- SLACK_ALERT_WEBHOOK=https://hooks.slack.com/services/...
+- SLACK_SIGNING_SECRET=...
+
+AI / ML
+- INFERENCE_SERVICE_URL=https://inference.yourdomain
+- INFERENCE_API_KEY=...
+- TRAINING_SERVICE_URL=https://training.yourdomain
+- NEXT_PUBLIC_PDF_LOGO_URL=https://yourcdn/logo.png (branding for PDFs)
+
+Rate limiting (production)
 - RATE_LIMIT_PER_MIN=120
+- UPSTASH_REDIS_REST_URL=...
+- UPSTASH_REDIS_REST_TOKEN=...
 
-## Deploy
-- Vercel recommended. Preview deployments are configured via GitHub Actions if `VERCEL_TOKEN` is provided.
-- Set environment variables in the Vercel project.
-- Configure PostgreSQL (Neon/Supabase/RDS/etc.) and update `DATABASE_URL`.
+Cron & Admin
+- CRON_SECRET=strong-secret
 
-## Billing
-- Stripe integration scaffolding:
-  - `pages/api/stripe/checkout.ts` – create checkout sessions
-  - `pages/api/stripe/portal.ts` – customer billing portal
-  - `pages/api/stripe/webhook.ts` – webhook receiver
-- Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
+## 🧱 Architecture
+- Next.js App Router for UI and API routes
+- Prisma ORM with PostgreSQL
+- NextAuth (JWT sessions), RBAC enforced in middleware and server components
+- Background jobs: serverless cron endpoints (forecast, retrain, alerts)
+- Observability: Sentry + DB request logs
+- Exports: PDF via @react-pdf/renderer stored in S3 with signed URLs
 
-## Slack Integration
-- Outbound alerts via `lib/alerts/sendSlackAlert.ts` (`SLACK_ALERT_WEBHOOK`).
-- Slash commands via `pages/api/slack/commands.ts` (set `SLACK_SIGNING_SECRET`).
-- Interactive messages via `pages/api/slack/interaction.ts`.
+Diagram: see docs/ARCHITECTURE.md
 
-## Observability
-- Sentry: `sentry.client.config.ts` and `sentry.server.config.ts`.
-- Request logging: `lib/logger.ts`, wired in `middleware.ts`.
-- Healthcheck: `GET /api/health` returns `{ status: "ok" }`.
+## 🌟 Key Packages
+- next, react, next-auth, @prisma/client, prisma
+- @sentry/nextjs, @upstash/ratelimit, @upstash/redis
+- @react-pdf/renderer, aws-sdk v3
+- jest, @testing-library/*, @playwright/test
 
-## Testing
-- Unit: Jest + RTL – `npm run test`
-- E2E: Playwright – `npm run e2e`
+## 🛠️ Scripts
+- npm run dev – start dev server
+- npm run build – production build
+- npm run start – start production server
+- npm run lint – eslint
+- npm run typecheck – tsc --noEmit
+- npm run test – jest
+- npm run e2e – playwright tests
 
-## CI/CD
-- GitHub Actions: `.github/workflows/ci.yml` runs lint, typecheck, build, unit, e2e.
-- PRs deploy Vercel previews when `VERCEL_TOKEN` secret is present.
+## 🏗️ CI/CD
+- .github/workflows/ci.yml – runs on every PR: lint, typecheck, build, tests
+
+## 🩺 Health & Ops
+- GET /api/health – returns { status: "ok" }
+- Request logging stored in DB (table: RequestLog), sampled traces in Sentry
+- Rate limiter protects /api/* (Upstash in prod, in-memory in dev)

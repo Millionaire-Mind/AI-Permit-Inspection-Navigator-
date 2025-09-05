@@ -23,3 +23,25 @@ export const CheckPermitsResponseSchema = z.object({
   }),
 });
 export type CheckPermitsResponse = z.infer<typeof CheckPermitsResponseSchema>;
+
+export const CheckPermitsByContextSchema = z.object({
+  project_type: z.string().min(1),
+  location: z.string().min(1),
+});
+export type CheckPermitsByContextInput = z.infer<typeof CheckPermitsByContextSchema>;
+
+export const CheckPermitsByContextResponseSchema = z.object({
+  jurisdiction: z.object({ id: z.string().uuid(), name: z.string(), slug: z.string().nullable().optional() }).nullable().optional(),
+  projectType: z.string(),
+  decisions: z.array(z.object({
+    permitTypeId: z.string().uuid(),
+    permitTypeName: z.string().optional(),
+    status: z.enum(['required', 'maybe', 'not_required']),
+    rationale: z.string().optional(),
+  })),
+  confidence: z.object({
+    score: z.number().min(0).max(1),
+    factors: z.record(z.string(), z.any()).optional(),
+  }),
+});
+export type CheckPermitsByContextResponse = z.infer<typeof CheckPermitsByContextResponseSchema>;

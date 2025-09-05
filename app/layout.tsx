@@ -2,7 +2,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import CommandPalette from "@/components/CommandPalette";
 import ThemeToggle from "@/components/ThemeToggle";
-try { require("@/sentry.client.config"); } catch {}
+try { (0, eval)("require")("@/sentry.client.config"); } catch {}
 
 export const metadata = {
   title: "AI Permit & Inspection Navigator",

@@ -4,6 +4,7 @@ import QuickSuggestionBanner from "@/components/QuickSuggestionBanner";
 import Card, { CardBody } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import InspectionsTimeline from "@/components/InspectionsTimeline";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 
 export default function Dashboard() {
   return (
@@ -11,6 +12,7 @@ export default function Dashboard() {
       <Sidebar />
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
+        <OnboardingChecklist />
         <QuickSuggestionBanner />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

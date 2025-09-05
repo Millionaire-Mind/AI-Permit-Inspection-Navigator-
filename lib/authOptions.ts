@@ -25,9 +25,31 @@ session: { strategy: "jwt" },
         if (!ok) return null;
         return { id: user.id, email: user.email, name: user.name, role: user.role } as unknown as User;
       }
-    })
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      allowDangerousEmailAccountLinking: false,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          email: profile.email,
+          name: profile.name,
+        } as any;
+      },
+    }),
   ],
   callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      // Ensure role default exists for OAuth-created users
+      if (user && !(user as any).role) {
+        try {
+          await (prisma as any).user.update({ where: { id: user.id }, data: { role: 'USER' } });
+          (user as any).role = 'USER';
+        } catch {}
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         // @ts-ignore
@@ -47,6 +69,11 @@ session: { strategy: "jwt" },
       session.user.role = token.role ?? "USER";
       return session;
     }
-  }
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 

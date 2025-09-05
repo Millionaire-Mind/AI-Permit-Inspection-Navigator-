@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logRequest } from "@/lib/logger";
-import { jwtVerify } from "jose";
+import { logRequest, logApiRequest } from "@/lib/logger";
+import { getToken } from "next-auth/jwt";
+import { rateLimitRequest, getClientIdentifier } from "@/lib/rateLimit";
 
 // Define roles and their inheritance
 const rolesHierarchy: { [role: string]: string[] } = {
-  admin: ["admin", "editor", "viewer"], // admin inherits editor + viewer
-  editor: ["editor", "viewer"],         // editor inherits viewer
-  viewer: ["viewer"],                    // viewer has no inheritance
+  admin: ["admin", "editor", "viewer"],
+  editor: ["editor", "viewer"],
+  viewer: ["viewer"],
 };
 
 // Define route access by minimum required role
@@ -17,65 +18,68 @@ const routeRoles: { [pathPattern: string]: string } = {
 };
 
 export async function middleware(req: NextRequest) {
-  // Basic request logging
   await logRequest(req as any);
 
-  // Simple rate limit (per IP per minute) using in-memory Map (best-effort)
-  // For production, replace with Redis or durable store.
-  try {
-    const ip = req.ip || req.headers.get("x-forwarded-for") || "unknown";
-    const key = `${ip}:${new Date().getUTCFullYear()}-${new Date().getUTCMonth()}-${new Date().getUTCDate()}-${new Date().getUTCHours()}-${new Date().getUTCMinutes()}`;
-    // @ts-ignore
-    globalThis.__rate = globalThis.__rate || new Map<string, number>();
-    // @ts-ignore
-    const store: Map<string, number> = globalThis.__rate;
-    const count = (store.get(key) || 0) + 1;
-    store.set(key, count);
-    const limit = Number(process.env.RATE_LIMIT_PER_MIN || 120);
-    if (count > limit && req.nextUrl.pathname.startsWith("/api/")) {
-      return new NextResponse("Rate limit exceeded", { status: 429 });
+  const isApi = req.nextUrl.pathname.startsWith("/api/");
+  const start = isApi ? Date.now() : 0;
+
+  // Scalable rate limit for API paths
+  if (isApi) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const userId = (token?.id as string | undefined) || undefined;
+    const id = userId ? `user:${userId}` : `ip:${getClientIdentifier(req)}`;
+    const result = await rateLimitRequest(id);
+    if (!result.success) {
+      const res = new NextResponse("Rate limit exceeded", {
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": String(result.limit),
+          "X-RateLimit-Remaining": String(result.remaining),
+          "X-RateLimit-Reset": String(result.reset),
+        },
+      });
+      // Fire-and-forget logging
+      logApiRequest({ method: req.method, path: req.nextUrl.pathname, userId, statusCode: 429, durationMs: Date.now() - start, ua: req.headers.get('user-agent') ?? null });
+      return res;
     }
-  } catch {}
-  // Try NextAuth JWT (if using session: 'jwt')
-  let role: string | undefined = undefined;
-  const token = req.cookies.get("next-auth.session-token")?.value || req.cookies.get("__Secure-next-auth.session-token")?.value;
-  if (token && process.env.NEXTAUTH_SECRET) {
-    try {
-      const { payload } = await jwtVerify(new TextEncoder().encode(token), new TextEncoder().encode(process.env.NEXTAUTH_SECRET));
-      // @ts-ignore
-      role = payload?.role?.toString().toLowerCase();
-    } catch {}
   }
 
-  if (!role) {
-    // Fallback to legacy cookie for local demos
-    role = req.cookies.get("role")?.value;
-  }
+  // Use NextAuth token for RBAC
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  let role = (token?.role as string | undefined) || req.cookies.get("role")?.value;
+  role = role?.toString().toLowerCase();
 
-  if (!role || !(role in rolesHierarchy)) {
+  // If accessing protected routes, require auth
+  const pathname = req.nextUrl.pathname;
+  const needsViewer = pathname.startsWith('/protected') || pathname.startsWith('/editor') || pathname.startsWith('/admin');
+  if (needsViewer && !role) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const pathname = req.nextUrl.pathname;
-
-  // Check each static path pattern
-  if (pathname.startsWith("/admin") && !rolesHierarchy[role].includes("admin")) {
+  if (pathname.startsWith("/admin") && !rolesHierarchy[role ?? "viewer"].includes("admin")) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+  if (pathname.startsWith("/editor") && !rolesHierarchy[role ?? "viewer"].includes("editor")) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+  if (pathname.startsWith("/protected") && !rolesHierarchy[role ?? "viewer"].includes("viewer")) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (pathname.startsWith("/editor") && !rolesHierarchy[role].includes("editor")) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  const res = NextResponse.next();
+
+  if (isApi) {
+    // Fire-and-forget logging
+    const userId = (token?.id as string | undefined) || undefined;
+    res.headers.set('X-Request-Start', String(start));
+    const statusCode = res.status || 200;
+    const duration = Date.now() - start;
+    logApiRequest({ method: req.method, path: req.nextUrl.pathname, userId, statusCode, durationMs: duration, ua: req.headers.get('user-agent') ?? null });
   }
 
-  if (pathname.startsWith("/protected") && !rolesHierarchy[role].includes("viewer")) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-
-  // Role allowed → continue
-  return NextResponse.next();
+  return res;
 }
 
-// Use static matcher array to satisfy Next.js 14
 export const config = {
-  matcher: ["/admin/:path*", "/editor/:path*", "/protected/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/editor/:path*", "/protected/:path*"],
 };

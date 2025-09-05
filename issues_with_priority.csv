@@ -1,0 +1,31 @@
+Title,Body,Labels,Priority
+Core: Verify Permit Requirement Checker,"✅ Ensure Permit Requirement Checker works with Prisma/Postgres.\nAcceptance: User can input project type + location, system returns correct permit requirements.","core,🔴 high",High
+Core: Permit Submission Flow,"🔴 High.\nImplement submission flow with validation, persistence, and status tracking.\nAcceptance: User can submit project info, system validates and saves to DB.","core,🔴 high",High
+Core: Inspections Timeline,🟡 Medium.\nRender timeline/calendar for inspections with dates pulled from DB.\nAcceptance: User sees inspection dates in dashboard calendar.,"core,🟡 medium",Medium
+Auth: Add NextAuth with RBAC,"🔴 High.\nImplement NextAuth (email+provider) with role-based access control (user, admin).\nAcceptance: Only admins see admin dashboards; sessions are secure.","auth,🔴 high",High
+Auth: Map User to Billing Customer,🔴 High.\nStore Stripe customer ID in DB and map to User model.\nAcceptance: User ↔ billing mapping is persistent.,"auth,billing,🔴 high",High
+Billing: Stripe Webhook Hardening,🔴 High.\nPersist subscription status in DB from Stripe webhooks.\nGate feature access on DB values instead of live Stripe lookups.,"billing,🔴 high",High
+Billing: Pricing Page & Subscription Plans,🟡 Medium.\nAdd UI for monthly/yearly plans and link to Stripe Checkout.\nAcceptance: User can upgrade/downgrade via UI.,"billing,🟡 medium",Medium
+Jobs: Migrate Cron to Serverless,🟡 Medium.\nMove node-cron tasks to Vercel Cron or GitHub Actions.\nAcceptance: Jobs run reliably in production.,"jobs,🟡 medium",Medium
+Jobs: Retry & Failure Logging,🟡 Medium.\nAdd retries and error logs for failed background tasks.,"jobs,🟡 medium",Medium
+AI: Retraining Pipeline,🔴 High.\nIntegrate retrain scheduler with external training endpoint.\nAcceptance: Admin can queue retrain; retrain status logged.,"ai,🔴 high",High
+AI: Canary Model Management,🟡 Medium.\nAdd UI to toggle between primary/canary models.\nAcceptance: Admin dashboard shows current active model.,"ai,🟡 medium",Medium
+Exports: PDF Storage in S3,🔴 High.\nStore generated PDFs in S3 and persist signed URLs in DB.\nAcceptance: User can re-download PDF anytime.,"exports,🔴 high",High
+Exports: Branded PDF Template,"🟡 Medium.\nImprove PDF design with PermitIQ branding.\nAcceptance: Export has logo, colors, professional style.","exports,🟡 medium",Medium
+Admin: Canary Metrics Dashboard,"🟡 Medium.\nGraph cost, SLA, retrain status.\nAcceptance: Admin can monitor model lifecycle.","admin,🟡 medium",Medium
+Admin: Audit Log Viewer,"🔴 High.\nUI to view system audit logs (who did what, when).","admin,🔴 high",High
+Admin: Retrain Scheduler (Cost-aware),🟡 Medium.\nAdd scheduler with cost-aware mode toggle.,"admin,🟡 medium",Medium
+Alerts: Slack Integration,🔴 High.\nSend alerts to Slack channel.\nAcceptance: Messages contain interactive approve/reject buttons.,"alerts,🔴 high",High
+Alerts: Email Notifications,🟡 Medium.\nSend structured email notifications via SMTP.,"alerts,🟡 medium",Medium
+Infra: Rate Limiting,"🔴 High.\nProtect APIs with rate limiting (per-user, per-IP).","infra,🔴 high",High
+Infra: Health Checks,🟡 Medium.\nAdd health check endpoint for monitoring.,"infra,🟡 medium",Medium
+Observability: Add Sentry,🔴 High.\nCentralized error tracking via Sentry SDK.,"infra,observability,🔴 high",High
+Observability: Request Logging,"🟡 Medium.\nLog API requests with metadata (user, latency, status).","infra,observability,🟡 medium",Medium
+CI/CD: GitHub Actions,"🟡 Medium.\nAdd workflows for lint, typecheck, build, test before merge.","ci,🟡 medium",Medium
+Testing: Unit & Integration,"🔴 High.\nAdd Jest tests for API routes, DB models, Stripe hooks.","testing,🔴 high",High
+Testing: E2E with Playwright,"🟡 Medium.\nAdd Playwright tests for signup, billing, dashboard flows.","testing,🟡 medium",Medium
+Docs: Update README,"🟡 Medium.\nExpand README with onboarding, env vars, architecture diagram.","docs,🟡 medium",Medium
+Docs: OpenAPI Spec,🟡 Medium.\nDocument API endpoints with OpenAPI and examples.,"docs,🟡 medium",Medium
+UI: Dark Mode + Command Palette,🟢 Low.\nAdd dark mode toggle and Linear-style command palette.,"ui,🟢 low",Low
+UI: Design System Components,"🟡 Medium.\nFinalize reusable components (buttons, modals, alerts).","ui,🟡 medium",Medium
+UX: Onboarding Checklist,🟢 Low.\nInteractive checklist for new users.,"ux,🟢 low",Low

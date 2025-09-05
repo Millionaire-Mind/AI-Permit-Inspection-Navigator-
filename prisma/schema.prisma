@@ -19,17 +19,40 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   role      Role     @default(USER)
-  customerId         String?
+  stripeCustomerId   String?
   subscriptionStatus String? @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
   subscriptions      Subscription[]
   invoices           Invoice[]
+  applications       PermitApplication[]
+  retrainJobs        RetrainJob[]
+  reports            Report[]
+  pdfExports         PdfExport[]
+  onboarding         OnboardingChecklist?
+
+  @@index([email])
+  @@index([stripeCustomerId])
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  VALIDATION_FAILED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum RetrainStatus {
+  QUEUED
+  TRAINING
+  COMPLETED
+  FAILED
 }
 
 model Audit {
@@ -38,6 +61,46 @@ model Audit {
   actor     String?
   detail    Json?
   createdAt DateTime @default(now())
+}
+
+model JobFailureLog {
+  id        String   @id @default(cuid())
+  jobName   String
+  error     String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model RequestLog {
+  id          String   @id @default(cuid())
+  method      String
+  path        String
+  userId      String?
+  statusCode  Int
+  durationMs  Int
+  createdAt   DateTime @default(now())
+  userAgent   String?
+}
+
+model RetrainSchedule {
+  id            String   @id @default("default")
+  enabled       Boolean  @default(true)
+  intervalHours Int?
+  cronExpr      String?
+  costAware     Boolean  @default(false)
+  lastRunAt     DateTime?
+  nextRunAt     DateTime?
+  updatedAt     DateTime @updatedAt
+}
+
+model OnboardingChecklist {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id])
+  completeProfile   Boolean  @default(false)
+  createFirstProject Boolean @default(false)
+  exploreDashboard  Boolean  @default(false)
+  completedAt       DateTime?
+  updatedAt         DateTime @updatedAt
 }
 
 model AITrainingExample {
@@ -53,26 +116,96 @@ model Jurisdiction {
   projects           Project[]           @relation("JurisdictionProjects")
   permitTypes        PermitType[]
   permitRequirements PermitRequirement[] @relation("JurisdictionPermitRequirements")
+  /** Optional normalized location code, e.g., 'seattle-wa' */
+  slug               String?  @unique
 }
 
 model Project {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation("JurisdictionProjects", fields: [jurisdictionId], references: [id])
-  // add other fields here
+  /** Optional normalized project type string, e.g., 'residential_remodel', 'electrical', 'commercial_ti' */
+  projectType    String?
+  /** Optional free-form location string (city/county/state). Prefer joining through Jurisdiction */
+  location       String?
+
+  applications   PermitApplication[]
 }
 
 model PermitRequirement {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation("JurisdictionPermitRequirements", fields: [jurisdictionId], references: [id])
-  // add other fields here
+  permitTypeId   String
+  permitType     PermitType   @relation(fields: [permitTypeId], references: [id])
+  projectType    String
+  /** Human-readable rule text, e.g., "Electrical work over $500 requires permit" */
+  rule           String
+  /** Optional machine-readable criteria used for a conservative evaluator */
+  criteria       Json?
+
+  @@index([jurisdictionId, projectType])
+  @@index([jurisdictionId, permitTypeId, projectType])
 }
 
 model PermitType {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  name           String
+
+  permitRequirements PermitRequirement[]
+}
+
+model PermitApplication {
+  id            String             @id @default(uuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  projectId     String
+  project       Project            @relation(fields: [projectId], references: [id])
+  data          Json
+  status        ApplicationStatus  @default(SUBMITTED)
+  submittedAt   DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model RetrainJob {
+  id          String        @id @default(cuid())
+  requestedBy String
+  user        User          @relation(fields: [requestedBy], references: [id])
+  status      RetrainStatus @default(QUEUED)
+  modelName   String        @default("primary")
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  address   String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  pdfs      PdfExport[]
+}
+
+model PdfExport {
+  id        String   @id @default(cuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  fileUrl   String
+  signedUrl String?
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@index([userId])
+  @@index([fileUrl])
 }
 
 model AlertRule {
