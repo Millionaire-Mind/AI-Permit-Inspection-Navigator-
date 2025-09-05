@@ -12,13 +12,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const priceId = process.env.STRIPE_PRICE_ID;
     if (!key || !priceId) return res.status(500).json({ error: "stripe_not_configured" });
     const stripe = (eval('require') as any)("stripe")(key, { apiVersion: "2023-10-16" });
+
+    const { prisma } = await import("@/lib/prisma");
+    const anyDb: any = prisma as any;
+    const user = await anyDb.user.findUnique({ where: { email } });
+
+    let customerId = user?.stripeCustomerId as string | undefined;
+    if (!customerId) {
+      // Try to find or create Stripe customer
+      const existing = await stripe.customers.list({ email, limit: 1 });
+      const customer = existing.data[0] || (await stripe.customers.create({ email, name: user?.name || undefined }));
+      customerId = customer.id as string;
+      await anyDb.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
+    }
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=cancel`,
-      customer_email: email
+      customer: customerId,
     });
     return res.status(200).json({ url: checkout.url });
   } catch (err: any) {

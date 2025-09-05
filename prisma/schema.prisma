@@ -19,7 +19,7 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   role      Role     @default(USER)
-  customerId         String?
+  stripeCustomerId   String?
   subscriptionStatus String? @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
@@ -27,6 +27,7 @@ model User {
   invoices           Invoice[]
 
   @@index([email])
+  @@index([stripeCustomerId])
 }
 
 enum Role {

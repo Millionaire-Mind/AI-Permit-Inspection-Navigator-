@@ -16,8 +16,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 });
     }
     const hash = await bcrypt.hash(password, 10);
-    const user = await (prisma as any).user.create({ data: { email, password: hash, name, role: 'USER' } });
-    return NextResponse.json({ id: user.id, email: user.email, role: user.role });
+
+    // Create Stripe customer
+    let stripeCustomerId: string | null = null;
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (key) {
+      const stripe = (eval('require') as any)("stripe")(key, { apiVersion: "2023-10-16" });
+      const customer = await stripe.customers.create({ email, name: name || undefined });
+      stripeCustomerId = customer.id as string;
+    }
+
+    const user = await (prisma as any).user.create({ data: { email, password: hash, name, role: 'USER', stripeCustomerId } });
+    return NextResponse.json({ id: user.id, email: user.email, role: user.role, stripeCustomerId: user.stripeCustomerId });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? 'Unknown error' }, { status: 500 });
   }

@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (email) {
           const user = await anyDb.user.findUnique({ where: { email } });
           if (user) {
-            await anyDb.user.update({ where: { id: user.id }, data: { customerId } });
+            await anyDb.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
           }
         }
         break;
@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const status = sub.status as string;
         const planId = sub.items?.data?.[0]?.price?.id as string | undefined;
         const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
-        const user = await anyDb.user.findFirst({ where: { customerId } });
+        const user = await anyDb.user.findFirst({ where: { stripeCustomerId: customerId } });
         if (user) {
           await anyDb.user.update({ where: { id: user.id }, data: { subscriptionStatus: status } });
           await anyDb.subscription.upsert({
@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'invoice.payment_succeeded': {
         const inv = event.data.object as any;
         const customerId = inv.customer as string;
-        const user = await anyDb.user.findFirst({ where: { customerId } });
+        const user = await anyDb.user.findFirst({ where: { stripeCustomerId: customerId } });
         if (user) {
           await anyDb.invoice.upsert({
             where: { stripeInvoiceId: String(inv.id) },
