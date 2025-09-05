@@ -26,6 +26,7 @@ model User {
   subscriptions      Subscription[]
   invoices           Invoice[]
   applications       PermitApplication[]
+  retrainJobs        RetrainJob[]
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -42,6 +43,13 @@ enum ApplicationStatus {
   IN_REVIEW
   APPROVED
   REJECTED
+}
+
+enum RetrainStatus {
+  QUEUED
+  TRAINING
+  COMPLETED
+  FAILED
 }
 
 model Audit {
@@ -119,6 +127,17 @@ model PermitApplication {
 
   @@index([userId])
   @@index([projectId])
+}
+
+model RetrainJob {
+  id          String        @id @default(cuid())
+  requestedBy String
+  user        User          @relation(fields: [requestedBy], references: [id])
+  status      RetrainStatus @default(QUEUED)
+  modelName   String        @default("primary")
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model AlertRule {
