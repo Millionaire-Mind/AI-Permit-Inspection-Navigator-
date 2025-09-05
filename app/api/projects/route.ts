@@ -98,37 +98,5 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-  const data = parsed.data;
-
-  const project = await prisma.project.create({ data });
-  return NextResponse.json({ project }, { status: 201 });
 }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const input = {
-    userId: searchParams.get('userId') ?? '',
-    jurisdictionId: searchParams.get('jurisdictionId') ?? undefined,
-    limit: searchParams.get('limit') ?? undefined,
-    cursor: searchParams.get('cursor') ?? undefined,
-  };
-  const parsed = ProjectListQuerySchema.safeParse(input);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-  const { userId, jurisdictionId, limit, cursor } = parsed.data;
-
-  const projects = await prisma.project.findMany({
-    where: {
-      ...(jurisdictionId ? { jurisdictionId } : {}),
-      // userId may not exist on Project in current schema; guard by ignoring
-    },
-    take: limit,
-    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-    orderBy: { id: 'desc' },
-  });
-
-  const nextCursor = projects.length === limit ? projects[projects.length - 1].id : null;
-
-  return NextResponse.json({ projects, nextCursor });
-}
