@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logRequest } from "@/lib/logger";
-import { jwtVerify } from "jose";
+import { getToken } from "next-auth/jwt";
 
 // Define roles and their inheritance
 const rolesHierarchy: { [role: string]: string[] } = {
@@ -36,27 +36,29 @@ export async function middleware(req: NextRequest) {
       return new NextResponse("Rate limit exceeded", { status: 429 });
     }
   } catch {}
-  // Try NextAuth JWT (if using session: 'jwt')
-  let role: string | undefined = undefined;
-  const token = req.cookies.get("next-auth.session-token")?.value || req.cookies.get("__Secure-next-auth.session-token")?.value;
-  if (token && process.env.NEXTAUTH_SECRET) {
-    try {
-      const { payload } = await jwtVerify(new TextEncoder().encode(token), new TextEncoder().encode(process.env.NEXTAUTH_SECRET));
-      // @ts-ignore
-      role = payload?.role?.toString().toLowerCase();
-    } catch {}
-  }
+  // Use NextAuth helper to parse JWT and role
+  const sessionToken = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const role = (sessionToken?.role as string | undefined)?.toString().toLowerCase();
 
-  if (!role) {
-    // Fallback to legacy cookie for local demos
-    role = req.cookies.get("role")?.value;
+  const { pathname, search } = req.nextUrl;
+
+  // Allow auth routes and static assets
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/api/auth");
+  const isAsset = pathname.startsWith("/_next") || pathname.startsWith("/favicon.ico");
+  if (isAuthRoute || isAsset) {
+    // If already authenticated and on /login, redirect to dashboard
+    if (sessionToken && pathname.startsWith("/login")) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    return NextResponse.next();
   }
 
   if (!role || !(role in rolesHierarchy)) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("callbackUrl", pathname + search);
+    return NextResponse.redirect(url);
   }
-
-  const pathname = req.nextUrl.pathname;
 
   // Check each static path pattern
   if (pathname.startsWith("/admin") && !rolesHierarchy[role].includes("admin")) {
