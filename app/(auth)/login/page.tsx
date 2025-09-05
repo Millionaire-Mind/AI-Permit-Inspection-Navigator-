@@ -30,6 +30,9 @@ export default function LoginPage() {
         </div>
         <button type="submit" disabled={loading} className="px-3 py-2 bg-blue-600 text-white rounded">{loading?"Signing in...":"Sign in"}</button>
       </form>
+      <div className="pt-2">
+        <button onClick={() => signIn('google', { callbackUrl: '/dashboard' })} className="px-3 py-2 bg-red-600 text-white rounded">Continue with Google</button>
+      </div>
     </main>
   );
 }
