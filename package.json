@@ -17,7 +17,8 @@
     "test": "jest",
     "test:ci": "jest --ci --reporters=default --reporters=jest-junit",
     "e2e": "playwright test --reporter=list",
-    "e2e:ci": "playwright test --reporter=junit --timeout=60000"
+    "e2e:ci": "playwright test --reporter=junit --timeout=60000",
+    "test:unit": "jest --runInBand --detectOpenHandles"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
@@ -72,7 +73,8 @@
     "prisma": "^5.22.0",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "whatwg-fetch": "^3.6.20"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
