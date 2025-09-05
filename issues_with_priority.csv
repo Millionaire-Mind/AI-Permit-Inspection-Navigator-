@@ -1,0 +1,10 @@
+Title,Body,Labels,Priority
+Core: Verify Permit Requirement Checker,"✅ Ensure Permit Requirement Checker works with Prisma/Postgres.\nAcceptance: User can input project type + location, system returns correct permit requirements.","core,✅ verify present",High
+Auth: Add NextAuth with RBAC,"🔴 High priority.\nImplement NextAuth (email+provider) with role-based access control (user, admin).\nAcceptance: Only admins see admin dashboards; sessions are secure.","auth,🔴 high",High
+Billing: Persist Stripe customer ↔ user mapping,"🔴 High priority.\nStore Stripe customer ID in DB and map to User.\nAcceptance: Billing is enforced via DB check, not just Stripe API.","billing,🔴 high",High
+Background Jobs: Migrate node-cron,🟡 Medium priority.\nMove cron tasks to Vercel Cron or GitHub Actions for serverless hosting.\nAcceptance: Scheduled tasks run reliably in production.,"jobs,🟡 medium",Medium
+AI: Retraining Pipeline,🟡 Medium.\nConnect retrain scheduler to external training endpoint.\nAcceptance: Admin can queue retrain; retrain status is logged.,"ai,🟡 medium",Medium
+UI: Dark Mode + Command Palette,"🟢 Low.\nImplement dark mode toggle and Linear-style command palette.\nAcceptance: Keyboard shortcut opens palette, dark mode persists per user.","ui,🟢 low",Low
+Observability: Add Sentry,🔴 High.\nAdd centralized error tracking with Sentry.\nAcceptance: All API/UI errors are logged with context.,"infra,🔴 high",High
+CI/CD: Add GitHub Actions,"🟡 Medium.\nAdd pipeline for lint, typecheck, build, test.\nAcceptance: PRs must pass CI before merge.","ci,🟡 medium",Medium
+Docs: Update README + API Docs,"🟡 Medium.\nExpand README with onboarding, env vars, architecture diagram.\nAcceptance: New dev can onboard in <1hr.","docs,🟡 medium",Medium
