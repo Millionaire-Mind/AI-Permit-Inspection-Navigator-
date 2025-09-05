@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+import { logPermitApplicationCreated } from '@/lib/audit';
 
 const SubmitSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -39,7 +40,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'unauthorized' }, { status: 401 });
     }
 
-    // Validate project exists
     const project = await (prisma as any).project.findUnique({ where: { id: parsed.data.projectId } });
     if (!project) {
       return NextResponse.json({ status: 'validation_error', error: { formErrors: [], fieldErrors: { projectId: ['Invalid projectId'] } } }, { status: 400 });
@@ -58,6 +58,8 @@ export async function POST(req: Request) {
         status: 'SUBMITTED',
       },
     });
+
+    await logPermitApplicationCreated(userId, application.id);
 
     return NextResponse.json({ status: 'success', applicationId: application.id });
   } catch (e: any) {
