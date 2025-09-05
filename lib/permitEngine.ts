@@ -26,10 +26,10 @@ export async function checkProjectPermits(projectId: string) {
   }> = [];
 
   for (const req of requirements as any[]) {
-    const status = evaluateCriteria(req.criteria ?? {}, params);
-    const ruleText = typeof req.rule === 'string' ? req.rule : '';
+    const status = evaluateCriteria((req as any).criteria ?? {}, params);
+    const ruleText = typeof (req as any).rule === 'string' ? (req as any).rule : '';
     const rationale = `Matched rule: ${ruleText.slice(0, 140)}${ruleText.length > 140 ? '…' : ''}`;
-    const permitTypeId = req.permitTypeId ?? "unknown";
+    const permitTypeId = (req as any).permitTypeId ?? 'unknown';
     decisions.push({ permitTypeId, status, rationale });
   }
 
@@ -39,9 +39,9 @@ export async function checkProjectPermits(projectId: string) {
     // @ts-ignore
     if ((prisma as any).projectPermit?.upsert) {
       await (prisma as any).projectPermit.upsert({
-        where: { projectId_permitTypeId: { projectId: project.id, permitTypeId: d.permitTypeId } },
+        where: { projectId_permitTypeId: { projectId: (project as any).id, permitTypeId: d.permitTypeId } },
         update: { status: d.status, rationale: d.rationale },
-        create: { projectId: project.id, permitTypeId: d.permitTypeId, status: d.status, rationale: d.rationale },
+        create: { projectId: (project as any).id, permitTypeId: d.permitTypeId, status: d.status, rationale: d.rationale },
       });
     }
   }
@@ -54,11 +54,11 @@ export async function checkProjectPermits(projectId: string) {
   if ((prisma as any).confidence?.create) {
     confidence = await (prisma as any).confidence.create({
       data: {
-        projectId: project.id,
+        projectId: (project as any).id,
         scope: 'permit_check',
         score,
         factors: {
-          jurisdiction: project.jurisdiction.name,
+          jurisdiction: (project as any).jurisdiction.name,
           ruleCount: decisions.length,
           paramKeys: Object.keys(params).length,
           maybeCount: decisions.filter(d => d.status === 'maybe').length,
@@ -67,7 +67,7 @@ export async function checkProjectPermits(projectId: string) {
     });
   }
 
-  return { projectId: project.id, decisions, confidence };
+  return { projectId: (project as any).id, decisions, confidence };
 }
 
 /** Simple machine-checkable criteria evaluator. Extend as needed. */
@@ -78,15 +78,15 @@ function evaluateCriteria(criteria: Record<string, any>, params: Record<string, 
 
   if ('valuationMin' in criteria) {
     total++;
-    if (Number(params.valuation ?? 0) >= Number(criteria.valuationMin)) votes++;
+    if (Number((params as any).valuation ?? 0) >= Number(criteria.valuationMin)) votes++;
   }
   if ('sqftMin' in criteria) {
     total++;
-    if (Number(params.sqft ?? 0) >= Number(criteria.sqftMin)) votes++;
+    if (Number((params as any).sqft ?? 0) >= Number(criteria.sqftMin)) votes++;
   }
   if (Array.isArray(criteria.scopeIncludes)) {
     total++;
-    const scope = String(params.scope ?? '').toLowerCase();
+    const scope = String((params as any).scope ?? '').toLowerCase();
     const ok = (criteria.scopeIncludes as string[]).some(s => scope.includes(s.toLowerCase()));
     if (ok) votes++;
   }
@@ -99,6 +99,46 @@ function evaluateCriteria(criteria: Record<string, any>, params: Record<string, 
   return 'maybe' as const;
 }
 
+export async function checkPermitRequirementsByContext(params: { projectType: string; location: string; }) {
+  const { projectType, location } = params;
+  const jurisdiction = await prisma.jurisdiction.findFirst({
+    where: {
+      OR: [
+        { slug: location.toLowerCase() },
+        { name: { equals: location, mode: 'insensitive' } },
+      ],
+    },
+  });
+  if (!jurisdiction) {
+    return { decisions: [], confidence: { score: 0.0, factors: { message: 'Jurisdiction not found' } } };
+  }
+
+  const requirements = await prisma.permitRequirement.findMany({
+    where: {
+      jurisdictionId: jurisdiction.id,
+      projectType: projectType,
+    },
+    include: { permitType: true },
+  });
+
+  const decisions = requirements.map((req: any) => {
+    // For now, context-only evaluation uses declared criteria without project params
+    const status = evaluateCriteria(req.criteria ?? {}, {});
+    const rationale = `Matched rule: ${String(req.rule).slice(0, 140)}${String(req.rule).length > 140 ? '…' : ''}`;
+    return { permitTypeId: req.permitTypeId, status, rationale, permitTypeName: req.permitType?.name };
+  });
+
+  const clearCount = decisions.filter((d: any) => d.status !== 'maybe').length;
+  const score = decisions.length ? clearCount / decisions.length : 0.5;
+
+  return {
+    jurisdiction: { id: jurisdiction.id, name: jurisdiction.name, slug: jurisdiction.slug },
+    projectType,
+    decisions,
+    confidence: { score, factors: { ruleCount: decisions.length } },
+  };
+}
+
 export async function buildInspectionPlan(projectId: string) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) throw new Error('Project not found');
@@ -109,10 +149,10 @@ export async function buildInspectionPlan(projectId: string) {
     include: { permitType: true },
   }) : [];
 
-  const items = [];
+  const items = [] as any[];
   let idx = 0;
   for (const pp of permits) {
-    const t = pp.permitType.name.toLowerCase();
+    const t = (pp as any).permitType.name.toLowerCase();
     if (t.includes('electrical')) {
       items.push({
         id: crypto.randomUUID(),
@@ -171,12 +211,12 @@ export async function buildInspectionPlan(projectId: string) {
     if ((prisma as any).inspection?.create) {
       await (prisma as any).inspection.create({
         data: {
-          id: item.id,
+          id: (item as any).id,
           projectId,
-          type: item.type,
-          requiredAfter: item.requiredAfter ?? null,
-          orderIndex: item.orderIndex,
-          notes: item.notes ?? null,
+          type: (item as any).type,
+          requiredAfter: (item as any).requiredAfter ?? null,
+          orderIndex: (item as any).orderIndex,
+          notes: (item as any).notes ?? null,
         },
       });
     }

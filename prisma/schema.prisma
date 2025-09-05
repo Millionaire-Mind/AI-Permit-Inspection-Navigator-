@@ -12,16 +12,15 @@ datasource db {
 // ========================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      UserRole @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  role      Role     @default(USER)
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  name               String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  role               Role     @default(USER)
   customerId         String?
-  subscriptionStatus String? @default("inactive")
+  subscriptionStatus String?  @default("inactive")
 
   aiTrainingExamples AITrainingExample[] @relation("UserAITrainingExamples")
   subscriptions      Subscription[]
@@ -54,26 +53,53 @@ model Jurisdiction {
   projects           Project[]           @relation("JurisdictionProjects")
   permitTypes        PermitType[]
   permitRequirements PermitRequirement[] @relation("JurisdictionPermitRequirements")
+  /**
+   * Optional normalized location code, e.g., 'seattle-wa'
+   */
+  slug               String?             @unique
 }
 
 model Project {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation("JurisdictionProjects", fields: [jurisdictionId], references: [id])
-  // add other fields here
+  /**
+   * Optional normalized project type string, e.g., 'residential_remodel', 'electrical', 'commercial_ti'
+   */
+  projectType    String?
+  /**
+   * Optional free-form location string (city/county/state). Prefer joining through Jurisdiction
+   */
+  location       String?
 }
 
 model PermitRequirement {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation("JurisdictionPermitRequirements", fields: [jurisdictionId], references: [id])
-  // add other fields here
+  permitTypeId   String
+  permitType     PermitType   @relation(fields: [permitTypeId], references: [id])
+  projectType    String
+  /**
+   * Human-readable rule text, e.g., "Electrical work over $500 requires permit"
+   */
+  rule           String
+  /**
+   * Optional machine-readable criteria used for a conservative evaluator
+   */
+  criteria       Json?
+
+  @@index([jurisdictionId, projectType])
+  @@index([jurisdictionId, permitTypeId, projectType])
 }
 
 model PermitType {
   id             String       @id @default(uuid())
   jurisdictionId String
   jurisdiction   Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+  name           String
+
+  permitRequirements PermitRequirement[]
 }
 
 model AlertRule {
@@ -106,7 +132,7 @@ model SLATask {
 }
 
 model SLASettings {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   category  String
   threshold Int
   teamId    String?
@@ -122,16 +148,16 @@ model ProductionModel {
 }
 
 model Subscription {
-  id                    String   @id @default(cuid())
-  userId                String
-  user                  User     @relation(fields: [userId], references: [id])
-  stripeCustomerId      String
-  stripeSubscriptionId  String   @unique
-  status                String
-  planId                String?
-  currentPeriodEnd      DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  stripeCustomerId     String
+  stripeSubscriptionId String    @unique
+  status               String
+  planId               String?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model Invoice {
