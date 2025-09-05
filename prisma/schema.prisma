@@ -62,6 +62,14 @@ model Audit {
   createdAt DateTime @default(now())
 }
 
+model JobFailureLog {
+  id        String   @id @default(cuid())
+  jobName   String
+  error     String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
 model AITrainingExample {
   id     String @id @default(uuid())
   userId String
