@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getActiveModelVersion } from '@/lib/ml/retrainQueueManager';
 
 /**
  * Very conservative, deterministic checker:
@@ -13,6 +14,10 @@ export async function checkProjectPermits(projectId: string) {
     include: { jurisdiction: true },
   });
   if (!project) throw new Error('Project not found');
+
+  // Example: read active model for future use
+  const activeModel = await getActiveModelVersion();
+  void activeModel;
 
   const requirements = await prisma.permitRequirement.findMany({
     where: { jurisdictionId: project.jurisdictionId },
