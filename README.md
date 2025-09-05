@@ -80,3 +80,14 @@ A **production-ready, enterprise-grade SaaS platform** for streamlining permit i
 ## CI/CD
 - GitHub Actions: `.github/workflows/ci.yml` runs lint, typecheck, build, unit, e2e.
 - PRs deploy Vercel previews when `VERCEL_TOKEN` secret is present.
+
+## Rate Limiting (Production)
+
+This app enforces a default limit of 120 requests/minute per user (if authenticated) or per IP (if anonymous) for all `/api/*` routes. In production, it uses Upstash Redis (sliding window). In development, it falls back to an in-memory limiter.
+
+Environment variables:
+
+- `RATE_LIMIT_PER_MIN` (optional, default 120)
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (required for production limiter)
+
+No code changes required; middleware automatically applies limits.

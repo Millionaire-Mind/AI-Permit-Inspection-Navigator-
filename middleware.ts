@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logRequest } from "@/lib/logger";
 import { getToken } from "next-auth/jwt";
+import { rateLimitRequest, getClientIdentifier } from "@/lib/rateLimit";
 
 // Define roles and their inheritance
 const rolesHierarchy: { [role: string]: string[] } = {
@@ -19,23 +20,25 @@ const routeRoles: { [pathPattern: string]: string } = {
 export async function middleware(req: NextRequest) {
   await logRequest(req as any);
 
-  // Simple rate limit for API paths
-  try {
-    const ip = req.ip || req.headers.get("x-forwarded-for") || "unknown";
-    const key = `${ip}:${new Date().getUTCFullYear()}-${new Date().getUTCMonth()}-${new Date().getUTCDate()}-${new Date().getUTCHours()}-${new Date().getUTCMinutes()}`;
-    // @ts-ignore
-    globalThis.__rate = globalThis.__rate || new Map<string, number>();
-    // @ts-ignore
-    const store: Map<string, number> = globalThis.__rate;
-    const count = (store.get(key) || 0) + 1;
-    store.set(key, count);
-    const limit = Number(process.env.RATE_LIMIT_PER_MIN || 120);
-    if (count > limit && req.nextUrl.pathname.startsWith("/api/")) {
-      return new NextResponse("Rate limit exceeded", { status: 429 });
+  // Scalable rate limit for API paths
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const userId = (token?.id as string | undefined) || undefined;
+    const id = userId ? `user:${userId}` : `ip:${getClientIdentifier(req)}`;
+    const result = await rateLimitRequest(id);
+    if (!result.success) {
+      return new NextResponse("Rate limit exceeded", {
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": String(result.limit),
+          "X-RateLimit-Remaining": String(result.remaining),
+          "X-RateLimit-Reset": String(result.reset),
+        },
+      });
     }
-  } catch {}
+  }
 
-  // Use NextAuth token
+  // Use NextAuth token for RBAC
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   let role = (token?.role as string | undefined) || req.cookies.get("role")?.value;
   role = role?.toString().toLowerCase();
@@ -61,5 +64,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/editor/:path*", "/protected/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/editor/:path*", "/protected/:path*"],
 };
