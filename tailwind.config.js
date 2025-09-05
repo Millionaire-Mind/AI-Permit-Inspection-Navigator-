@@ -8,6 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        sidebar: {
+          DEFAULT: "#1A202C", // dark gray for sidebar
+        },
+        content: {
+          DEFAULT: "#F7FAFC", // off-white for main content
+        },
+        accent: {
+          DEFAULT: "#4A90E2", // blue accents
+        },
+        status: {
+          progress: "#F59E0B", // amber-500 for In Progress
+        },
         brand: {
           50: "#eef2ff",
           100: "#e0e7ff",
