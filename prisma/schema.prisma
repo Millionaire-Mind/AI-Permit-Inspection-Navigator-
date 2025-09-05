@@ -29,6 +29,7 @@ model User {
   retrainJobs        RetrainJob[]
   reports            Report[]
   pdfExports         PdfExport[]
+  onboarding         OnboardingChecklist?
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -90,6 +91,16 @@ model RetrainSchedule {
   lastRunAt     DateTime?
   nextRunAt     DateTime?
   updatedAt     DateTime @updatedAt
+}
+
+model OnboardingChecklist {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id])
+  completeProfile   Boolean  @default(false)
+  createFirstProject Boolean @default(false)
+  exploreDashboard  Boolean  @default(false)
+  completedAt       DateTime?
+  updatedAt         DateTime @updatedAt
 }
 
 model AITrainingExample {
