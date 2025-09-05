@@ -32,6 +32,10 @@ export async function runAlertSweep() {
         await prisma.audit.create({ data: { action: "alert_generated", actor: "system", detail: { ruleId: r.id, kind: r.kind, scope: r.scope, threshold: r.threshold } } });
       } catch {}
     }
+
+    return { created };
+  } catch (error) {
+    console.error('Error running alert sweep:', error);
+    return { created: 0, error: error.message };
   }
-  return { created };
 }

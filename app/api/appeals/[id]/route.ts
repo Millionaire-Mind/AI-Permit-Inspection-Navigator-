@@ -27,16 +27,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       where: { id: params.id },
       data: { status: action, reviewedAt: new Date() },
     });
-    return NextResponse.json({ appeal });
-  }
 
   if (action === "assign" && assignTo) {
     const appeal = await client.appeal.update({
       where: { id: params.id },
       data: { assignedToId: assignTo },
     });
-    return NextResponse.json({ appeal });
-  }
 
   if (action === "note" && note) {
     const created = await client.appealNote.create({

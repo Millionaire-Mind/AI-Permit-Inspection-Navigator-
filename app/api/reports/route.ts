@@ -10,9 +10,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const parse = ReportCreateSchema.safeParse(body);
-  if (!parse.success) return NextResponse.json({ error: parse.error.format() }, { status: 400 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
   const { userId, address } = parse.data;
   const client: any = prisma as any;
