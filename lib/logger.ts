@@ -22,3 +22,15 @@ export async function logRequest(request: Request, extra?: Record<string, unknow
     logger.warn("logRequest_failed", { error: e?.message });
   }
 }
+
+export async function logApiRequest({ method, path, userId, statusCode, durationMs, ua }: { method: string; path: string; userId?: string | null; statusCode: number; durationMs: number; ua?: string | null; }) {
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    const anyDb: any = prisma as any;
+    if (anyDb.requestLog?.create) {
+      await anyDb.requestLog.create({ data: { method, path, userId: userId ?? null, statusCode, durationMs: Math.round(durationMs), userAgent: ua ?? null } });
+    }
+  } catch (e: any) {
+    logger.warn('requestLog_persist_failed', { error: e?.message });
+  }
+}

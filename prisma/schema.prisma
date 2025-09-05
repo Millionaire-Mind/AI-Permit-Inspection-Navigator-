@@ -70,6 +70,17 @@ model JobFailureLog {
   createdAt DateTime @default(now())
 }
 
+model RequestLog {
+  id          String   @id @default(cuid())
+  method      String
+  path        String
+  userId      String?
+  statusCode  Int
+  durationMs  Int
+  createdAt   DateTime @default(now())
+  userAgent   String?
+}
+
 model RetrainSchedule {
   id            String   @id @default("default")
   enabled       Boolean  @default(true)

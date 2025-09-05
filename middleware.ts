@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logRequest } from "@/lib/logger";
+import { logRequest, logApiRequest } from "@/lib/logger";
 import { getToken } from "next-auth/jwt";
 import { rateLimitRequest, getClientIdentifier } from "@/lib/rateLimit";
 
@@ -20,14 +20,17 @@ const routeRoles: { [pathPattern: string]: string } = {
 export async function middleware(req: NextRequest) {
   await logRequest(req as any);
 
+  const isApi = req.nextUrl.pathname.startsWith("/api/");
+  const start = isApi ? Date.now() : 0;
+
   // Scalable rate limit for API paths
-  if (req.nextUrl.pathname.startsWith("/api/")) {
+  if (isApi) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     const userId = (token?.id as string | undefined) || undefined;
     const id = userId ? `user:${userId}` : `ip:${getClientIdentifier(req)}`;
     const result = await rateLimitRequest(id);
     if (!result.success) {
-      return new NextResponse("Rate limit exceeded", {
+      const res = new NextResponse("Rate limit exceeded", {
         status: 429,
         headers: {
           "X-RateLimit-Limit": String(result.limit),
@@ -35,6 +38,9 @@ export async function middleware(req: NextRequest) {
           "X-RateLimit-Reset": String(result.reset),
         },
       });
+      // Fire-and-forget logging
+      logApiRequest({ method: req.method, path: req.nextUrl.pathname, userId, statusCode: 429, durationMs: Date.now() - start, ua: req.headers.get('user-agent') ?? null });
+      return res;
     }
   }
 
@@ -60,7 +66,18 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+
+  if (isApi) {
+    // Fire-and-forget logging
+    const userId = (token?.id as string | undefined) || undefined;
+    res.headers.set('X-Request-Start', String(start));
+    const statusCode = res.status || 200;
+    const duration = Date.now() - start;
+    logApiRequest({ method: req.method, path: req.nextUrl.pathname, userId, statusCode, durationMs: duration, ua: req.headers.get('user-agent') ?? null });
+  }
+
+  return res;
 }
 
 export const config = {
