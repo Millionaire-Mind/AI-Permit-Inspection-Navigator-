@@ -34,3 +34,5 @@ export function Modal({ open, onClose, title, children, actions, size = 'md' }: 
   );
 }
 
+export default Modal;
+
