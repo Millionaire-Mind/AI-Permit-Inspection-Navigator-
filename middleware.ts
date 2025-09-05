@@ -18,6 +18,10 @@ const routeRoles: { [pathPattern: string]: string } = {
 };
 
 export async function middleware(req: NextRequest) {
+  // Bypass NextAuth auth endpoints to prevent auth flows from being intercepted
+  if (req.nextUrl.pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
   await logRequest(req as any);
 
   const isApi = req.nextUrl.pathname.startsWith("/api/");
