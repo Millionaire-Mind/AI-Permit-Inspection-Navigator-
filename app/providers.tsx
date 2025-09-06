@@ -6,9 +6,11 @@ import { useEffect } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    (async () => {
-      try { await import("../sentry.client.config"); } catch {}
-    })();
+    if (process.env.NODE_ENV === "production") {
+      (async () => {
+        try { await import("../sentry.client.config"); } catch {}
+      })();
+    }
   }, []);
   return <SessionProvider>{children}</SessionProvider>;
 }
