@@ -7,4 +7,3 @@ export function Providers({ children }: { children: React.ReactNode }) {
   try { require("../sentry.client.config"); } catch {}
   return <SessionProvider>{children}</SessionProvider>;
 }
-
