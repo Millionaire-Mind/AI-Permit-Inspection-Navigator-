@@ -44,8 +44,8 @@ export async function scheduleRetrainIfNeeded({ minSamples = 200, triggeredBy = 
 
   try {
     if (typeof window === 'undefined') {
-      const fs = await import('fs');
-      const path = await import('path');
+      const fs = (eval('require') as any)('fs') as typeof import('fs');
+      const path = (eval('require') as any)('path') as typeof import('path');
       const tmpDir = path.join(process.cwd(), "tmp");
       if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
       fs.writeFileSync(path.join(tmpDir, `retrain-${job.id}.json`), JSON.stringify({ jobId: job.id, samples }, null, 2));
