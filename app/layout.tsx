@@ -2,7 +2,6 @@ import "./globals.css";
 import { ReactNode } from "react";
 import CommandPalette from "@/components/CommandPalette";
 import ThemeToggle from "@/components/ThemeToggle";
-try { require("@/sentry.client.config"); } catch {}
 import { Providers } from "./providers";
 
 export const metadata = {
