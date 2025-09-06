@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import ReportForm from "@/components/ReportForm";
 import QuickSuggestionBanner from "@/components/QuickSuggestionBanner";
@@ -35,15 +36,9 @@ export default function Dashboard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => (window.location.href = "/projects")}>
-            New Project
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/forms")}>
-            Find Forms
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/ask-ai")}>
-            Ask AI
-          </Button>
+          <Link href="/projects"><Button size="sm">New Project</Button></Link>
+          <Link href="/forms"><Button variant="secondary" size="sm">Find Forms</Button></Link>
+          <Link href="/ask-ai"><Button variant="secondary" size="sm">Ask AI</Button></Link>
         </div>
 
         <ReportForm />
