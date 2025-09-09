@@ -17,7 +17,7 @@ const DEFAULT_COMMANDS: Command[] = [
   { id: "projects", label: "Projects", href: "/projects", keywords: ["reports", "work"] },
   { id: "forms", label: "Forms", href: "/forms", keywords: ["applications"] },
   { id: "checklist", label: "Checklist", href: "/checklist", keywords: ["tasks"] },
-  { id: "billing", label: "Billing", href: "/(billing)/billing", keywords: ["plans", "stripe"] },
+  { id: "billing", label: "Billing", href: "/billing", keywords: ["plans", "stripe"] },
   { id: "settings", label: "Settings", href: "/settings", keywords: ["preferences", "notifications"] },
   { id: "moderator", label: "Moderator Review", href: "/moderator/review", keywords: ["appeals", "moderation"] },
   { id: "alerts", label: "Alerts", href: "/moderator/alerts", keywords: ["events"] },

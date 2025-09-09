@@ -46,7 +46,7 @@ export default function Sidebar() {
         {link("/projects", "Projects")}
         {link("/forms", "Forms")}
         {link("/checklist", "Checklist")}
-        {link("/(billing)/billing", "Billing")}
+        {link("/billing", "Billing")}
         {link("/settings", "Settings")}
         {link("/moderator/review", "Moderator Review")}
         {link("/moderator/alerts", "Alerts")}
