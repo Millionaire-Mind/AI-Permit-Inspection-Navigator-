@@ -153,3 +153,26 @@ model Invoice {
   hostedInvoiceUrl String?
   createdAt        DateTime @default(now())
 }
+
+// ========================================
+// FORM SUBMISSIONS
+// ========================================
+
+model FormSubmission {
+  id                 String   @id @default(cuid())
+  type               String
+  applicantName      String
+  address            String
+  phone              String
+  email              String
+  projectDescription String?
+  serviceAmperage    Int?
+  fixtures           Int?
+  equipmentType      String?
+  btuRating          Int?
+  squareFootage      Int?
+  estimatedValue     Int?
+  contractorName     String
+  contractorLicense  String
+  createdAt          DateTime @default(now())
+}
