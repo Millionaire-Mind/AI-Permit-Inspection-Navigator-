@@ -48,7 +48,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'customer.subscription.deleted': {
         const sub = event.data.object as any;
         const stripeCustomerId = sub.customer as string;
-        const status = sub.status as string;
+        const statusRaw = String(sub.status || '').toLowerCase();
+        const status = (
+          statusRaw === 'active' ? 'ACTIVE' :
+          statusRaw === 'trialing' ? 'TRIALING' :
+          statusRaw === 'past_due' ? 'PAST_DUE' :
+          statusRaw === 'canceled' ? 'CANCELED' :
+          statusRaw === 'incomplete' ? 'INCOMPLETE' :
+          statusRaw === 'incomplete_expired' ? 'INCOMPLETE_EXPIRED' :
+          statusRaw === 'unpaid' ? 'UNPAID' : 'INCOMPLETE') as any;
         const planId = sub.items?.data?.[0]?.price?.id as string | undefined;
         const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
         const customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
