@@ -4,7 +4,8 @@ import { Droplets } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import FormLayout from "../../../components/forms/FormLayout";
 
 const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
@@ -23,6 +24,7 @@ const PlumbingSchema = z.object({
 type PlumbingFormData = z.infer<typeof PlumbingSchema>;
 
 export default function PlumbingFormPage() {
+  const { data: session } = useSession();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const {
     register,
@@ -30,6 +32,16 @@ export default function PlumbingFormPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PlumbingFormData>({ resolver: zodResolver(PlumbingSchema) });
+
+  useEffect(() => {
+    if (session?.user) {
+      reset((prev) => ({
+        ...prev,
+        applicantName: session.user.name ?? prev.applicantName,
+        email: (session.user as any).email ?? prev.email,
+      }));
+    }
+  }, [session, reset]);
 
   const onSubmit = async (data: PlumbingFormData) => {
     setStatus("idle");

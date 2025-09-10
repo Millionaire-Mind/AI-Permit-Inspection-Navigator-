@@ -4,7 +4,8 @@ import { Home } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import FormLayout from "../../../components/forms/FormLayout";
 
 const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
@@ -24,6 +25,7 @@ const ResidentialSchema = z.object({
 type ResidentialFormData = z.infer<typeof ResidentialSchema>;
 
 export default function ResidentialFormPage() {
+  const { data: session } = useSession();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const {
     register,
@@ -31,6 +33,16 @@ export default function ResidentialFormPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ResidentialFormData>({ resolver: zodResolver(ResidentialSchema) });
+
+  useEffect(() => {
+    if (session?.user) {
+      reset((prev) => ({
+        ...prev,
+        applicantName: session.user.name ?? prev.applicantName,
+        email: (session.user as any).email ?? prev.email,
+      }));
+    }
+  }, [session, reset]);
 
   const onSubmit = async (data: ResidentialFormData) => {
     setStatus("idle");
