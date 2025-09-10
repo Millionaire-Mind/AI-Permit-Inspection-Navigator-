@@ -69,29 +69,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'invoice.payment_succeeded': {
         const inv = event.data.object as any;
         const stripeCustomerId = inv.customer as string;
+        const subscriptionStripeId = inv.subscription ? String(inv.subscription) : undefined;
         const customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
+        const subscription = subscriptionStripeId ? await anyDb.subscription.findFirst({ where: { stripeSubscriptionId: subscriptionStripeId } }) : null;
         if (customer) {
           await anyDb.invoice.upsert({
             where: { stripeInvoiceId: String(inv.id) },
-            update: { status: inv.status, amountTotal: inv.amount_total, currency: inv.currency, hostedInvoiceUrl: inv.hosted_invoice_url },
+            update: { status: inv.status, amountTotal: inv.amount_total, currency: inv.currency, hostedInvoiceUrl: inv.hosted_invoice_url, subscriptionId: subscription?.id ?? null },
             create: {
-              // If you decide to keep invoices, add an Invoice model linked to Customer or User
-              // For now, store minimal via KeyValue as a placeholder if Invoice model removed
               stripeInvoiceId: String(inv.id),
               amountTotal: inv.amount_total,
               currency: inv.currency,
               status: inv.status,
               hostedInvoiceUrl: inv.hosted_invoice_url,
               customerId: customer.id,
+              subscriptionId: subscription?.id ?? null,
             }
-          }).catch(async () => {
-            // Fallback: no Invoice model defined in new schema; store in KeyValue for traceability
-            const kvKey = `invoice:${inv.id}`;
-            await anyDb.keyValue.upsert({
-              where: { key: kvKey },
-              update: { value: JSON.stringify(inv) },
-              create: { key: kvKey, value: JSON.stringify(inv) },
-            });
           });
         }
         break;

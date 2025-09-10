@@ -97,6 +97,21 @@ model Subscription {
   createdAt           DateTime          @default(now())
 }
 
+model Invoice {
+  id               String   @id @default(uuid())
+  customer         Customer @relation(fields: [customerId], references: [id])
+  customerId       String
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId   String?
+  stripeInvoiceId  String   @unique
+  amountTotal      Int?
+  currency         String?
+  status           String?
+  hostedInvoiceUrl String?
+  s3Key            String?
+  createdAt        DateTime @default(now())
+}
+
 model Project {
   id         String    @id @default(uuid())
   user       User      @relation(fields: [userId], references: [id])

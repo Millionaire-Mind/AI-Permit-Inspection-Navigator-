@@ -33,13 +33,21 @@ export default function BillingPage() {
       <h1 className="text-2xl font-bold">Billing</h1>
       {summary && (
         <div className="border rounded p-3">
-          <div className="text-sm">Plan: {summary.subscription?.planId ?? "—"}</div>
+          <div className="text-sm">Plan: {summary.subscription?.plan ?? "—"}</div>
           <div className="text-sm">Status: {summary.subscription?.status ?? "inactive"}</div>
           <div className="text-sm">Renews: {summary.subscription?.currentPeriodEnd ? new Date(summary.subscription.currentPeriodEnd).toLocaleString() : "—"}</div>
           <div className="mt-2 text-sm font-medium">Recent Invoices</div>
           <ul className="list-disc pl-5 text-sm">
             {(summary.invoices ?? []).slice(0,5).map((i: any) => (
-              <li key={i.stripeInvoiceId}><a href={i.hostedInvoiceUrl} className="text-blue-600 underline">{i.amountTotal/100} {i.currency?.toUpperCase()} - {i.status}</a></li>
+              <li key={i.stripeInvoiceId} className="flex items-center gap-2">
+                <span>{(i.amountTotal ?? 0)/100} {i.currency?.toUpperCase()} - {i.status}</span>
+                {i.hostedInvoiceUrl && (
+                  <a href={i.hostedInvoiceUrl} className="text-blue-600 underline" target="_blank" rel="noreferrer">View</a>
+                )}
+                {i.s3Key && (
+                  <a href={`/api/exports/signed-url?key=${encodeURIComponent(i.s3Key)}`} className="text-blue-600 underline">Download PDF</a>
+                )}
+              </li>
             ))}
           </ul>
         </div>
