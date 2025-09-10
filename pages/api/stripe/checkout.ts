@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { prisma } from "@/lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
@@ -12,13 +13,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const priceId = process.env.STRIPE_PRICE_ID;
     if (!key || !priceId) return res.status(500).json({ error: "stripe_not_configured" });
     const stripe = (eval('require') as any)("stripe")(key, { apiVersion: "2023-10-16" });
+
+    // If the user already has a Customer with a Stripe ID, attach it to reuse
+    const user = await (prisma as any).user.findUnique({ where: { email: email.toLowerCase() } });
+    let existingStripeCustomerId: string | undefined;
+    if (user?.customerId) {
+      const customer = await (prisma as any).customer.findUnique({ where: { id: user.customerId } });
+      existingStripeCustomerId = customer?.stripeCustomerId;
+    }
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=cancel`,
-      customer_email: email
+      ...(existingStripeCustomerId ? { customer: existingStripeCustomerId } : { customer_email: email })
     });
     return res.status(200).json({ url: checkout.url });
   } catch (err: any) {

@@ -10,8 +10,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const anyDb: any = prisma as any;
   const user = await anyDb.user.findUnique({ where: { email: email.toLowerCase() } });
   if (!user) return res.status(404).json({ error: "not_found" });
-  const subscription = await anyDb.subscription.findFirst({ where: { userId: user.id }, orderBy: { updatedAt: "desc" } });
-  const invoices = await anyDb.invoice.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 10 });
-  return res.status(200).json({ subscription, invoices });
+  const customer = user.customerId ? await anyDb.customer.findUnique({ where: { id: user.customerId } }) : null;
+  const subscription = customer ? await anyDb.subscription.findFirst({ where: { customerId: customer.id }, orderBy: { createdAt: "desc" } }) : null;
+  // If Invoice model is not present in new schema, invoices array will be empty; consider using KeyValue if needed
+  const invoices: any[] = [];
+  return res.status(200).json({ subscription, invoices, customer });
 }
 

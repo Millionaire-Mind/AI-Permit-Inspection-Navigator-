@@ -27,12 +27,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as any;
-        const customerId = session.customer as string;
+        const stripeCustomerId = session.customer as string;
         const email = session.customer_details?.email as string | undefined;
         if (email) {
-          const user = await anyDb.user.findUnique({ where: { email } });
+          const user = await anyDb.user.findUnique({ where: { email: email.toLowerCase() } });
           if (user) {
-            await anyDb.user.update({ where: { id: user.id }, data: { customerId } });
+            // Ensure Customer row exists and link to User
+            let customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
+            if (!customer) {
+              customer = await anyDb.customer.create({ data: { userId: user.id, stripeCustomerId } });
+            }
+            // Link user to customer
+            await anyDb.user.update({ where: { id: user.id }, data: { customerId: customer.id } });
           }
         }
         break;
@@ -40,22 +46,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as any;
-        const customerId = sub.customer as string;
+        const stripeCustomerId = sub.customer as string;
         const status = sub.status as string;
         const planId = sub.items?.data?.[0]?.price?.id as string | undefined;
         const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
-        const user = await anyDb.user.findFirst({ where: { customerId } });
-        if (user) {
-          await anyDb.user.update({ where: { id: user.id }, data: { subscriptionStatus: status } });
+        const customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
+        if (customer) {
           await anyDb.subscription.upsert({
             where: { stripeSubscriptionId: String(sub.id) },
-            update: { status, planId, currentPeriodEnd },
+            update: { status, plan: planId ?? "default", currentPeriodEnd },
             create: {
-              userId: user.id,
-              stripeCustomerId: customerId,
+              customerId: customer.id,
               stripeSubscriptionId: String(sub.id),
               status,
-              planId,
+              plan: planId ?? "default",
               currentPeriodEnd
             }
           });
@@ -64,20 +68,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       case 'invoice.payment_succeeded': {
         const inv = event.data.object as any;
-        const customerId = inv.customer as string;
-        const user = await anyDb.user.findFirst({ where: { customerId } });
-        if (user) {
+        const stripeCustomerId = inv.customer as string;
+        const customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
+        if (customer) {
           await anyDb.invoice.upsert({
             where: { stripeInvoiceId: String(inv.id) },
             update: { status: inv.status, amountTotal: inv.amount_total, currency: inv.currency, hostedInvoiceUrl: inv.hosted_invoice_url },
             create: {
-              userId: user.id,
+              // If you decide to keep invoices, add an Invoice model linked to Customer or User
+              // For now, store minimal via KeyValue as a placeholder if Invoice model removed
               stripeInvoiceId: String(inv.id),
               amountTotal: inv.amount_total,
               currency: inv.currency,
               status: inv.status,
-              hostedInvoiceUrl: inv.hosted_invoice_url
+              hostedInvoiceUrl: inv.hosted_invoice_url,
+              customerId: customer.id,
             }
+          }).catch(async () => {
+            // Fallback: no Invoice model defined in new schema; store in KeyValue for traceability
+            const kvKey = `invoice:${inv.id}`;
+            await anyDb.keyValue.upsert({
+              where: { key: kvKey },
+              update: { value: JSON.stringify(inv) },
+              create: { key: kvKey, value: JSON.stringify(inv) },
+            });
           });
         }
         break;
