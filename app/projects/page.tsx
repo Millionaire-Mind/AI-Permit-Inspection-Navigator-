@@ -1,8 +1,29 @@
-"use client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { hasActiveSubscription } from "@/lib/subscription";
 
+export default async function ProjectsPage() {
+  const session: any = await getServerSession(authOptions as any);
+  if (!session) {
+    return <div className="p-6">Please sign in to access this page.</div>;
+  }
+  const ok = await hasActiveSubscription(session.user.id);
+  if (!ok) {
+    return (
+      <div className="p-6 space-y-3">
+        <h1 className="text-2xl font-bold">Projects</h1>
+        <div className="rounded-md bg-yellow-50 text-yellow-900 px-4 py-3 ring-1 ring-yellow-200">This feature requires an active subscription. <a className="underline" href="/billing">Manage billing</a>.</div>
+      </div>
+    );
+  }
+
+  return <ClientProjects />;
+}
+
+"use client";
 import { useEffect, useState } from "react";
 
-export default function ProjectsPage() {
+function ClientProjects() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 

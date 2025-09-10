@@ -1,10 +1,32 @@
-"use client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { hasActiveSubscription } from "@/lib/subscription";
 
+export default async function AskAIPage() {
+  const session: any = await getServerSession(authOptions as any);
+  if (!session) {
+    return <div className="p-6">Please sign in to access this page.</div>;
+  }
+  const ok = await hasActiveSubscription(session.user.id);
+  if (!ok) {
+    return (
+      <div className="p-6 space-y-3">
+        <h1 className="text-2xl font-bold">Ask AI</h1>
+        <div className="rounded-md bg-yellow-50 text-yellow-900 px-4 py-3 ring-1 ring-yellow-200">This feature requires an active subscription. <a className="underline" href="/billing">Manage billing</a>.</div>
+      </div>
+    );
+  }
+
+  // Use a client subcomponent for interactive UI
+  return <ClientAskAI />;
+}
+
+"use client";
 import { useState } from "react";
 import PermitInfoBox from "@/components/PermitInfoBox";
 import TipsPanel from "@/components/TipsPanel";
 
-export default function AskAIPage() {
+function ClientAskAI() {
   const [q, setQ] = useState("");
   const [info, setInfo] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
