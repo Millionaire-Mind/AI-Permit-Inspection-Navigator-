@@ -46,27 +46,30 @@ export async function checkProjectPermits(projectId: string) {
     }
   }
 
-  // Confidence: ratio of rules with clear boolean matches (vs "maybe")
-  const clearCount = decisions.filter(d => d.status !== 'maybe').length;
-  const score = decisions.length ? clearCount / decisions.length : 0.6;
-
-  let confidence: any = null;
-  if ((prisma as any).confidence?.create) {
-    confidence = await (prisma as any).confidence.create({
-      data: {
-        projectId: project.id,
-        scope: 'permit_check',
-        score,
-        factors: {
-          jurisdiction: project.jurisdiction.name,
-          ruleCount: decisions.length,
-          paramKeys: Object.keys(params).length,
-          maybeCount: decisions.filter(d => d.status === 'maybe').length,
-        },
-      },
-    });
+  // Confidence: try inference API, fallback to heuristic
+  let score = 0.6;
+  try {
+    const url = process.env.INFERENCE_SERVICE_URL;
+    if (url) {
+      const resp = await fetch(`${url}/confidence/permit-check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id, jurisdiction: project.jurisdiction?.name, decisions }),
+      });
+      if (resp.ok) {
+        const body = await resp.json();
+        if (typeof body?.score === 'number') score = body.score;
+      }
+    }
+  } catch (_) {
+    // ignore remote errors; fallback below
+  }
+  if (score === 0.6) {
+    const clearCount = decisions.filter(d => d.status !== 'maybe').length;
+    score = decisions.length ? clearCount / decisions.length : 0.6;
   }
 
+  const confidence = { score, factors: { ruleCount: decisions.length } } as const;
   return { projectId: project.id, decisions, confidence };
 }
 
@@ -154,14 +157,23 @@ export async function buildInspectionPlan(projectId: string) {
     });
   }
 
-  const confidence = (prisma as any).confidence?.create ? await (prisma as any).confidence.create({
-    data: {
-      projectId,
-      scope: 'inspection_plan',
-      score: Math.min(0.9, 0.6 + items.length * 0.05),
-      factors: { itemCount: items.length },
-    },
-  }) : null;
+  // Confidence via inference, fallback heuristic
+  let score = Math.min(0.9, 0.6 + items.length * 0.05);
+  try {
+    const url = process.env.INFERENCE_SERVICE_URL;
+    if (url) {
+      const resp = await fetch(`${url}/confidence/inspection-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, items }),
+      });
+      if (resp.ok) {
+        const body = await resp.json();
+        if (typeof body?.score === 'number') score = body.score;
+      }
+    }
+  } catch (_) {}
+  const confidence = { score, factors: { itemCount: items.length } } as const;
 
   // Persist generated inspections (idempotent-ish: wipe & replace for demo)
   if ((prisma as any).inspection?.deleteMany) {
