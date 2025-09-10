@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { uploadBuffer } from "@/lib/storage";
 
 export const config = { api: { bodyParser: false } };
 
@@ -86,6 +87,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               subscriptionId: subscription?.id ?? null,
             }
           });
+        }
+        break;
+      }
+      case 'invoice.finalized': {
+        const inv = event.data.object as any;
+        const stripeCustomerId = inv.customer as string;
+        const invoicePdfUrl = inv.invoice_pdf as string | undefined;
+        const subscriptionStripeId = inv.subscription ? String(inv.subscription) : undefined;
+        const customer = await anyDb.customer.findFirst({ where: { stripeCustomerId } });
+        const subscription = subscriptionStripeId ? await anyDb.subscription.findFirst({ where: { stripeSubscriptionId: subscriptionStripeId } }) : null;
+        if (customer) {
+          // Ensure invoice row exists first
+          const invoice = await anyDb.invoice.upsert({
+            where: { stripeInvoiceId: String(inv.id) },
+            update: { status: inv.status, amountTotal: inv.amount_total, currency: inv.currency, hostedInvoiceUrl: inv.hosted_invoice_url, subscriptionId: subscription?.id ?? null },
+            create: {
+              stripeInvoiceId: String(inv.id),
+              amountTotal: inv.amount_total,
+              currency: inv.currency,
+              status: inv.status,
+              hostedInvoiceUrl: inv.hosted_invoice_url,
+              customerId: customer.id,
+              subscriptionId: subscription?.id ?? null,
+            }
+          });
+
+          // Archive PDF to S3 if configured and not already archived
+          if (invoicePdfUrl && (process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME)) {
+            try {
+              const resp = await fetch(invoicePdfUrl);
+              if (resp.ok) {
+                const ab = await resp.arrayBuffer();
+                const buf = Buffer.from(ab);
+                const key = `invoices/${stripeCustomerId}/${inv.id}.pdf`;
+                await uploadBuffer({ key, contentType: resp.headers.get('content-type') || 'application/pdf', body: buf });
+                await anyDb.invoice.update({ where: { stripeInvoiceId: String(inv.id) }, data: { s3Key: key } });
+              }
+            } catch (e) {
+              console.error('invoice.finalized archive error', e);
+            }
+          }
         }
         break;
       }
