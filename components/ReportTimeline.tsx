@@ -22,6 +22,9 @@ export default function ReportTimeline({ reportId }: { reportId: string }) {
           <li key={m.id} className="border rounded p-2">
             <div><b>Action:</b> {m.action} <span className="text-gray-600">({new Date(m.createdAt).toLocaleString()})</span></div>
             {m.note && <div className="text-sm text-gray-700">{m.note}</div>}
+            {typeof m.confidence === 'number' && (
+              <div className="text-xs text-gray-600 mt-1">Confidence: {Math.round(m.confidence * 100)}%</div>
+            )}
           </li>
         ))}
         {r.appeals.map((a: any) => (
@@ -29,6 +32,9 @@ export default function ReportTimeline({ reportId }: { reportId: string }) {
             <div><b>Appeal:</b> {a.status} <span className="text-gray-600">({new Date(a.createdAt).toLocaleString()})</span></div>
             <div className="text-sm">{a.reason}</div>
             {a.notes?.length ? <div className="text-xs text-gray-600 mt-1">Notes: {a.notes.map((n:any)=>n.content).join("; ")}</div> : null}
+            {typeof a.confidence === 'number' && (
+              <div className="text-xs text-gray-600 mt-1">Confidence: {Math.round(a.confidence * 100)}%</div>
+            )}
           </li>
         ))}
       </ul>

@@ -9,6 +9,7 @@ type Item = {
   at: string;
   status?: string;
   description?: string;
+  confidence?: number;
 };
 
 export default function InspectionsTimeline({ projectId }: { projectId?: string }) {
@@ -38,6 +39,7 @@ export default function InspectionsTimeline({ projectId }: { projectId?: string 
             at: it.requiredAfter || new Date().toISOString(),
             status: `#${it.orderIndex + 1}`,
             description: it.notes,
+            confidence: typeof json.confidence?.score === 'number' ? Number(json.confidence.score) : undefined,
           }));
           setItems(mapped);
         } else {
@@ -71,6 +73,9 @@ export default function InspectionsTimeline({ projectId }: { projectId?: string 
             </div>
             <div className="text-xs text-gray-700 dark:text-gray-300">{i.description || ""}</div>
             {i.status && <div className="text-xs mt-1">Status: {i.status}</div>}
+            {typeof i.confidence === 'number' && (
+              <div className="text-xs text-gray-600">Confidence: {Math.round(i.confidence * 100)}%</div>
+            )}
           </li>
         ))}
       </ul>
