@@ -327,6 +327,335 @@ model Invoice {
   s3Key            String?
   createdAt        DateTime @default(now())
 }
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"] // optional, remove if not needed
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ReportStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  FLAGGED
+  COMPLETED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+}
+
+enum RetrainStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ProductionStage {
+  CANARY
+  PRODUCTION
+  STAGING
+}
+
+enum SLATaskStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+model User {
+  id             String      @id @default(uuid())
+  email          String      @unique
+  password       String?
+  name           String?
+  role           Role        @default(USER)
+  createdAt      DateTime    @default(now())
+  lastLoginAt    DateTime?
+
+  projects       Project[]
+  reports        Report[]
+  pdfExports     PdfExport[]
+  moderationActions ModerationAction[]  @relation("ModeratorActions")
+  aiAssistLogs   AIAssistLog[]
+  aiFeedbacks    AIFeedback[]
+  customers      Customer?   @relation(fields: [customerId], references: [id])
+  customerId     String?     @unique
+}
+
+model Customer {
+  id               String         @id @default(uuid())
+  user             User           @relation(fields: [userId], references: [id])
+  userId           String         @unique
+  stripeCustomerId String         @unique
+  createdAt        DateTime       @default(now())
+
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id                  String            @id @default(uuid())
+  customer            Customer          @relation(fields: [customerId], references: [id])
+  customerId          String
+  stripeSubscriptionId String           @unique
+  plan                String
+  status              SubscriptionStatus
+  currentPeriodEnd    DateTime?
+  cancelAtPeriodEnd   Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+}
+
+model Project {
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String
+  title      String
+  description String?
+  location   String?
+  status     String    @default("active")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime?
+
+  permits    Permit[]
+  reports    Report[]
+}
+
+model Permit {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  jurisdiction String
+  permitType  String
+  description String?
+  fees        Float?
+  estimatedTimeline String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime?
+
+  report      Report?  @relation(fields: [reportId], references: [id])
+  reportId    String?
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  project    Project?     @relation(fields: [projectId], references: [id])
+  projectId  String?
+  user       User         @relation(fields: [userId], references: [id])
+  userId     String
+  title      String?
+  address    String?
+  description String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime?
+
+  pdfExports         PdfExport[]
+  moderationActions  ModerationAction[]
+  aiAssistLogs       AIAssistLog[]
+  aiFeedbacks        AIFeedback[]
+  permits            Permit[]    @relation("ReportPermits")
+  slaTasks           SLATask[]
+}
+
+model PdfExport {
+  id        String   @id @default(uuid())
+  report    Report   @relation(fields: [reportId], references: [id])
+  reportId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  fileUrl   String
+  storageKey String?
+  createdAt DateTime @default(now())
+}
+
+model ModerationAction {
+  id            String   @id @default(uuid())
+  report        Report   @relation(fields: [reportId], references: [id])
+  reportId      String
+  adminUser     User     @relation("ModeratorActions", fields: [adminUserId], references: [id])
+  adminUserId   String
+  action        String
+  note          String?
+  overrideContent String?
+  createdAt     DateTime @default(now())
+}
+
+model AIAssistLog {
+  id                String   @id @default(uuid())
+  report            Report   @relation(fields: [reportId], references: [id])
+  reportId          String
+  moderator         User?    @relation(fields: [moderatorId], references: [id])
+  moderatorId       String?
+  suggestedCategory String?
+  confidence        Float?
+  rationale         String?
+  modelVersion      String?
+  slaUrgency        String?
+  createdAt         DateTime @default(now())
+}
+
+model AIFeedback {
+  id            String   @id @default(uuid())
+  report        Report   @relation(fields: [reportId], references: [id])
+  reportId      String
+  suggestionId  String?
+  accepted      Boolean
+  comments      String?
+  moderator     User?    @relation(fields: [moderatorId], references: [id])
+  moderatorId   String?
+  category      String?
+  confidence    Float?
+  createdAt     DateTime @default(now())
+}
+
+model AITrainingExample {
+  id             String   @id @default(cuid())
+  report          Report  @relation(fields: [reportId], references: [id])
+  reportId        String
+  suggestionId    String?
+  moderator       User?   @relation(fields: [moderatorId], references: [id])
+  moderatorId     String?
+  accepted        Boolean
+  comments        String?
+  category        String?
+  confidence      Float?
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+  usedInJobId     String?
+}
+
+model RetrainJob {
+  id           String       @id @default(cuid())
+  createdAt    DateTime     @default(now())
+  triggeredBy  String?
+  status       RetrainStatus @default(QUEUED)
+  priority     Int          @default(0)
+  sampleCount  Int          @default(0)
+  metadata     Json?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  error        String?
+  validation   Json?
+  promoted     Boolean?     @default(false)
+}
+
+model ProductionModel {
+  id           String   @id @default(cuid())
+  modelVersion String   @unique
+  stage        ProductionStage
+  deployedBy   String?
+  deployedAt   DateTime @default(now())
+  metadata     Json?
+}
+
+model ForecastLog {
+  id          String   @id @default(cuid())
+  triggeredAt DateTime @default(now())
+  timeframe   String?
+  results     Json
+  createdBy   String?
+  createdAt   DateTime @default(now())
+}
+
+model SLATask {
+  id           String       @id @default(cuid())
+  report        Report?     @relation(fields: [reportId], references: [id])
+  reportId      String?
+  title         String
+  description   String?
+  priority      Int?
+  dueAt         DateTime?
+  assignedTeam  String?
+  assignedUser  User?        @relation(fields: [assignedUserId], references: [id])
+  assignedUserId String?
+  status        SLATaskStatus @default(OPEN)
+  type          String?
+  createdAt     DateTime     @default(now())
+  closedAt      DateTime?
+}
+
+model SLASettings {
+  id        String   @id @default(cuid())
+  category  String
+  threshold Int
+  teamId    String?
+  createdAt DateTime @default(now())
+}
+
+model Audit {
+  id        String   @id @default(cuid())
+  action    String
+  actor     String?
+  detail    Json?
+  createdAt DateTime @default(now())
+}
+
+model KeyValue {
+  id    String  @id @default(cuid())
+  key   String  @unique
+  value String?
+}
+
+// ========================================
+// FORM SUBMISSIONS
+// ========================================
+
+model FormSubmission {
+  id                 String   @id @default(cuid())
+  type               String
+  applicantName      String
+  address            String
+  phone              String
+  email              String
+  projectDescription String?
+  serviceAmperage    Int?
+  fixtures           Int?
+  equipmentType      String?
+  btuRating          Int?
+  squareFootage      Int?
+  estimatedValue     Int?
+  contractorName     String
+  contractorLicense  String
+  createdAt          DateTime @default(now())
+}
+
+// Customer-based Invoice model
+model Invoice {
+  id               String   @id @default(uuid())
+  customer         Customer @relation(fields: [customerId], references: [id])
+  customerId       String
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId   String?
+  stripeInvoiceId  String   @unique
+  amountTotal      Int?
+  currency         String?
+  status           String?
+  hostedInvoiceUrl String?
+  s3Key            String?
+  createdAt        DateTime @default(now())
+}
 generator client {
   provider = "prisma-client-js"
 }
