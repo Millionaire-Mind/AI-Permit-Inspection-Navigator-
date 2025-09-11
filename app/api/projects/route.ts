@@ -1,35 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/authOptions";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const projects = await prisma.project.findMany({
+      where: { user: { email: session.user.email } },
       orderBy: { createdAt: "desc" },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        jurisdiction: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
     });
 
     return NextResponse.json({ projects });
@@ -45,48 +30,32 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
-    
-    // Basic validation
-    if (!body.name || !body.address || !body.jurisdictionId) {
-      return NextResponse.json(
-        { error: "Name, address, and jurisdictionId are required" },
-        { status: 400 }
-      );
+
+    const title: string | undefined = body?.title?.toString();
+    const description: string | undefined = body?.description?.toString();
+    const location: string | undefined = body?.location?.toString();
+
+    if (!title) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    // Find the authenticated user to get their id
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const project = await prisma.project.create({
       data: {
-        name: body.name,
-        description: body.description,
-        address: body.address,
-        jurisdictionId: body.jurisdictionId,
-        userId: session.user.id,
-        status: body.status || "DRAFT",
-        valuation: body.valuation,
-        sqft: body.sqft,
-        scope: body.scope,
-        params: body.params,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        jurisdiction: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
+        userId: user.id,
+        title,
+        description,
+        location,
       },
     });
 
