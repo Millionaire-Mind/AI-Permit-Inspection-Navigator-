@@ -1,35 +1,52 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcrypt')
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-	const hashedPassword = await bcrypt.hash('password123', 10);
-	const user = await prisma.user.upsert({
-		where: { email: 'superadmin@example.com' },
-		update: {},
-		create: {
-			email: 'superadmin@example.com',
-			password: hashedPassword,
-			name: 'Super Admin',
-			role: 'ADMIN',
-			subscriptionStatus: 'active'
-		}
-	});
-	console.log('✅ Seeded user:', user.email);
+  // Hash the admin password
+  const hashedPassword = await bcrypt.hash('password123', 10)
 
-	const j = await prisma.jurisdiction.create({ data: { name: 'Sample City' } });
-	await prisma.project.create({ data: { jurisdictionId: j.id } });
+  // Upsert the admin user
+  const admin = await prisma.user.upsert({
+    where: { email: 'superadmin@example.com' },
+    update: {},
+    create: {
+      email: 'superadmin@example.com',
+      password: hashedPassword,
+      name: 'Super Admin',
+      role: 'ADMIN',
+      customer: {
+        create: {
+          stripeCustomerId: 'seed_stripe_id',
+          subscriptions: {
+            create: {
+              plan: 'Pro',
+              status: 'ACTIVE', // Must match your SubscriptionStatus enum
+              stripeSubscriptionId: 'seed_sub_id'
+            }
+          }
+        }
+      },
+      projects: {
+        create: {
+          title: 'Sample Project',
+          description: 'This is a seeded sample project',
+          location: 'Sample City',
+        }
+      }
+    }
+  })
+
+  console.log('✅ Database seeded successfully')
+  console.log(`Admin user ID: ${admin.id} Email: ${admin.email}`)
 }
 
 main()
-	.then(async () => {
-		await prisma.$disconnect();
-		console.log('🌱 Database seeded successfully');
-	})
-	.catch(async (e) => {
-		console.error('❌ Seeding failed:', e);
-		await prisma.$disconnect();
-		process.exit(1);
-	});
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
