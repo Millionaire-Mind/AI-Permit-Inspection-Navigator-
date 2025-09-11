@@ -333,11 +333,6 @@ generator client {
   previewFeatures = ["fullTextSearch"] // optional, remove if not needed
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 enum Role {
   USER
   MODERATOR
@@ -660,11 +655,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 // ========================================
 // USER & AUTHENTICATION MODELS
 // ========================================
@@ -903,11 +893,6 @@ model Invoice {
 // to log all create/update/delete actions to the Audit table.
 generator client {
   provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ========================================
