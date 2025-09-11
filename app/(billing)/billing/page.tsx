@@ -22,7 +22,7 @@ export default function BillingPage() {
 
   async function goPortal() {
     setLoading("portal");
-    const res = await fetch("/api/stripe/portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerId: "replace_with_customer_id" }) });
+    const res = await fetch("/api/stripe/portal", { method: "POST" });
     const json = await res.json();
     setLoading("");
     if (json.url) window.location.href = json.url;
